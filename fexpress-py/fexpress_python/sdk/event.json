@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Event",
+  "description": "This is the original format of the event",
+  "type": "object",
+  "required": [
+    "entities",
+    "event_time",
+    "event_type"
+  ],
+  "properties": {
+    "attrs": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "$ref": "#/definitions/Value"
+      }
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/EntityID"
+      }
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "event_time": {
+      "type": "string",
+      "format": "partial-date-time"
+    },
+    "event_type": {
+      "$ref": "#/definitions/EventType"
+    },
+    "experiment_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "definitions": {
+    "EntityID": {
+      "type": "string"
+    },
+    "EventType": {
+      "type": "string"
+    },
+    "Value": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number",
+          "format": "float"
+        },
+        {
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "partial-date-time"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Value"
+          }
+        },
+        {
+          "$ref": "#/definitions/ValueWithAlias"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ValueWithAlias": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "alias": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "$ref": "#/definitions/Value"
+        }
+      }
+    }
+  }
+}

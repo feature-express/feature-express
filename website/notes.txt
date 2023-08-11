@@ -1,0 +1,23 @@
+background-image: linear-gradient(to right, #007bff, #009bff, #00b0eb, #00bfc0, #20c997);
+
+		Primary Color - Blue (#007BFF):
+	•	Represents: Trust, technology, innovation.
+	•	Usage: Main logo color, header backgrounds, and call-to-action buttons.
+		Secondary Color - Dark Gray (#343A40):
+	•	Represents: Professionalism, sophistication, modernity.
+	•	Usage: Text, secondary buttons, and icons.
+		Accent Color - Teal (#20C997):
+	•	Represents: Growth, freshness, creativity.
+	•	Usage: Highlights, links, and small UI elements.
+		Neutral Background - Light Gray (#F8F9FA):
+	•	Represents: Cleanliness, space, readability.
+	•	Usage: Backgrounds, cards, and containers.
+		Warning/Error Color - Red (#DC3545):
+	•	Represents: Alerts, errors, important notifications.
+	•	Usage: Error messages, warning notifications.
+		Success Color - Green (#28A745):
+	•	Represents: Success, growth, stability.
+	•	Usage: Success messages, status indicators.
+		Highlight Color - Orange (#FD7E14):
+	•	Represents: Energy, creativity, uniqueness.
+	•	Usage: Highlights that you want to stand out, promotional tags.

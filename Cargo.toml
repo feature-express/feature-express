@@ -1,0 +1,2 @@
+[workspace]
+members = ["fexpress", "fexpress-py"]

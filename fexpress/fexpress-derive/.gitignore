@@ -1,0 +1,6 @@
+/target
+.idea/
+*.so
+fexpress.egg-info
+__pycache__
+.ipynb_checkpoints

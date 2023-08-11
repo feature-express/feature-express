@@ -1,0 +1,139 @@
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+
+WH = _{ (WHITESPACE) + }
+
+// Literals
+lit_int = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
+lit_float = @{ lit_int ~ "." ~ ASCII_DIGIT* ~ (^"e" ~ lit_int)? }
+lit_bool_true = { "true" }
+lit_bool_false = { "false" }
+lit_bool = _{ lit_bool_true | lit_bool_false }
+single_quote = _{"'"}
+double_quote = _{"\""}
+lit_string_chars_single_quote = @{ (!"'" ~ ("\\'" | ANY))* }
+lit_string_chars_double_quote = @{ (!"\"" ~ ("\\\"" | ANY))* }
+lit_string = ${ single_quote ~ lit_string_chars_single_quote ~ single_quote | double_quote ~ lit_string_chars_double_quote ~ double_quote}
+lit_null = { ^"null" }
+
+// Tuple literals
+lit_tuple_int = { "(" ~ lit_int ~ ("," ~ lit_int)* ~ ")" }
+lit_tuple_float = { "(" ~ lit_float ~ ("," ~ lit_float)* ~ ")" }
+lit_tuple_string = { "(" ~ lit_string ~ ("," ~ lit_string)* ~ ")" }
+lit_tuple_bool = { "(" ~ lit_bool ~ ("," ~ lit_bool)* ~ ")" }
+
+literal = _{ lit_float | lit_int | lit_string | lit_bool | lit_null }
+lit_tuple = _{ lit_tuple_int | lit_tuple_float | lit_tuple_string | lit_tuple_bool }
+
+// Attributes
+symbol = _{!(for_keyword) ~ (ASCII_ALPHANUMERIC | "_" )+}
+attr_name = ${!(for_keyword) ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." )+}
+special_symbol = ${"@" ~ (ASCII_ALPHA | ASCII_DIGIT | "_" | "." )+}
+current_attr_name = { !(for_keyword) ~ special_symbol }
+variable_name = ${ !(for_keyword) ~ special_symbol }
+funcname = @{!(for_keyword) ~ (ASCII_ALPHA | ASCII_DIGIT | "_" )+}
+integer = @{ ASCII_DIGIT+ }
+symbol_untyped_attr = { !(for_keyword) ~ ( current_attr_name | attr_name ) }
+alias_symbol = { !(for_keyword) ~ attr_name }
+
+any_symbol = _{ obs_dt | event_type | event_time | event_id | attr }
+    obs_dt = {^"obs_dt"}
+    event_type = {^"event_type"}
+    event_time = {^"event_time"}
+    event_id = {^"event_id"}
+    attr = { !(for_keyword) ~ symbol_untyped_attr }
+
+// Operators
+math_op = _{ add | sub | div | mul | pow }
+    add = {"+"}
+    sub = {"-"}
+    div = {"/"}
+    mul = {"*"}
+    pow = {"^"}
+comparison_op = _{ gte | lte | lt | gt | neq | eq }
+    gte = { ">=" }
+    lte = { "<=" }
+    lt = { "<" }
+    gt = { ">" }
+    eq = { "==" | "=" }
+    neq = { "!=" | "<>" }
+logical_op = _{ and | or }
+    and = {^"and"}
+    or = {^"or"}
+all_in_op = _{ in_op | not_in_op }
+    in_op = { ^"in" }
+    not_in_op = { ^"not in" }
+neg = { "-" }
+binary_op = _{ comparison_op | math_op | logical_op }
+
+// Interval Expressions
+direction = { ^"next" | ^"last" | ^"previous" | ^"future" | ^"past" }
+direction_only = { ^"future" | ^"past" }
+unit = { (^"millisecond" | ^"second" | ^"minute" | ^"hour" | ^"day" | ^"week") ~ ^"s"? }
+fixed_interval = { direction ~ integer ~ unit }
+keyword_interval = { ^"YTD" | ^"MTD" | ^"WTD" | ^"Yesterday" | ^"LastWeek" | ^"LastMonth" | ^"LastQuarter" | ^"LastYear" | ^"SameDayLastWeek" | ^"SameDayLastMonth" | ^"SameDayLastYear" | ^"Tomorrow" | ^"NextWeek" | ^"NextMonth" | ^"NextQuarter" | ^"NextYear" | ^"SameDayNextWeek" | ^"SameDayNextMonth" | ^"SameDayNextYear" | ^"NextWorkDay" | ^"PreviousWorkDay" }
+interval = { fixed_interval | direction_only | keyword_interval }
+
+// Aggregates
+aggfunc_name = @{ symbol }
+groupby_expr = { expr }
+where_expr = { expr }
+from_expr = { expr }
+min_or_max = { (^"min" | ^"max") }
+having_expr = { min_or_max ~ expr }
+
+// Clauses
+over_keyword = { ^"over" }
+from_keyword = { ^"from" }
+where_keyword = { ^"where" }
+group_by_keyword = { ^"group by" }
+having_keyword = { ^"having" }
+select_keyword = _{ ^"select" }
+for_keyword = _{ ^"for" }
+wildcard = { "*" }
+comma = { "," }
+
+// Function Rules
+funcarg = { binary_expr | literal | "(" ~ aggfunc ~ ")" | aggfunc | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | attr | wildcard }
+aggfunc0 = {
+    funcname ~ "(" ~ funcarg ~ ")" ~ over_keyword ~ interval ~ (from_keyword ~ from_expr)? ~ (where_keyword ~ where_expr)? ~ (group_by_keyword ~ groupby_expr)? ~ (having_keyword ~ having_expr)?
+}
+aggfunc1 = {
+    funcname ~ "(" ~ funcarg ~ "," ~ funcarg ~ ")" ~ over_keyword ~ interval ~ (from_keyword ~ from_expr)? ~ (where_keyword ~ where_expr)? ~ (group_by_keyword ~ groupby_expr)? ~ (having_keyword ~ having_expr)?
+}
+aggfunc = _{ aggfunc0 | aggfunc1 }
+func0 = { funcname ~ "()" }
+func1 = { funcname ~ "(" ~ funcarg ~ ")" }
+func2 = { funcname ~ "(" ~ funcarg ~ "," ~ funcarg ~ ")" }
+func3 = { funcname ~ "(" ~ funcarg ~ "," ~ funcarg ~ "," ~ funcarg ~ ")" }
+
+// Expressions
+in_expr = { in_term ~ all_in_op ~ lit_tuple }
+binary_expr = { term ~ (binary_op ~ term )+ }
+term = _{ literal | "(" ~ binary_expr ~ ")" | "(" ~ aggfunc ~ ")" | aggfunc | func0 | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | in_expr | attr }
+in_term = _{ any_symbol }
+expr = _{ binary_expr | literal | "(" ~ aggfunc ~ ")" | aggfunc | func0 | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | in_expr | attr }
+
+// Aliasing
+alias = { ^"as" ~ alias_symbol }
+expr_without_alias = { expr }
+expr_with_alias = { expr ~ alias }
+variable_assignment = { variable_name ~ ":=" ~ expr_without_alias }
+entities_assignment = { ^"@entities" ~ ":=" ~ symbol ~ comma?}
+events_assignment = { ^"@events" ~ ":=" ~ symbol ~ comma?}
+obs_dates_assignment = { ^"@obs_dates" ~ ":=" ~ symbol ~ comma?}
+experiment_id_assignment = { ^"@experiment_id" ~ ":=" ~ symbol ~ comma?}
+
+// Final Expressions
+// single_expression_in_query_with_delimiter = _{ ( variable_assignment | expr_with_alias | expr_without_alias ) ~ comma }
+// single_expression_in_query_opt_delimiter = _{ ( variable_assignment | expr_with_alias | expr_without_alias ) ~ (comma)? }
+// single_expression_in_query_without_delimiter = _{ ( variable_assignment | expr_with_alias | expr_without_alias ) }
+// full_query_single_expression = _{ (single_expression_in_query_with_delimiter | single_expression_in_query_without_delimiter) }
+// full_query_many_expressions = _{ (single_expression_in_query_with_delimiter)+ ~ single_expression_in_query_opt_delimiter }
+
+single_expression_in_query_opt_delimiter = _{ ( variable_assignment | expr_with_alias | expr_without_alias ) ~ (comma)? }
+single_expression_in_query_without_delimiter = _{ ( variable_assignment | expr_with_alias | expr_without_alias ) }
+full_query_single_expression = _{ (single_expression_in_query_without_delimiter) }
+full_query_many_expressions = _{ (single_expression_in_query_opt_delimiter)+ }
+
+full_query = { SOI ~ select_keyword ~ (full_query_many_expressions | full_query_single_expression) ~ for_keyword ~ ( entities_assignment | events_assignment | obs_dates_assignment ) ~ EOI }
+single_expression = _{ SOI ~ ( variable_assignment | expr_with_alias | expr_without_alias ) ~ EOI }

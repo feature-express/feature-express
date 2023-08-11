@@ -1,0 +1,12 @@
+/target
+.idea/
+.vscode/
+*.so
+fexpress.egg-info
+__pycache__
+.ipynb_checkpoints
+*.csv
+.DS_Store
+fexpress-py/tests_python/dataset
+notes/
+.git_old

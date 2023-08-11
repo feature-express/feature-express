@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EventStoreSettings",
+  "type": "object",
+  "required": [
+    "include_events_on_obs_date",
+    "parallel"
+  ],
+  "properties": {
+    "include_events_on_obs_date": {
+      "type": "boolean"
+    },
+    "parallel": {
+      "type": "boolean"
+    }
+  }
+}

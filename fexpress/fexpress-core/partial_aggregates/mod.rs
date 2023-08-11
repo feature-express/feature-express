@@ -1,0 +1,12 @@
+mod abs_energy;
+mod abs_sum_of_changes;
+mod count;
+mod has_duplicate;
+mod has_duplicate_max;
+mod has_duplicate_min;
+mod mean;
+mod root_mean_square;
+mod skewness;
+mod standard_deviation;
+mod sum;
+// mod kurtosis;
