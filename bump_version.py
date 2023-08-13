@@ -16,8 +16,7 @@ def main():
     config = {
        "cargo_toml_files": [
             "fexpress-main/Cargo.toml",
-            "fexpress-main/fexpress-core/Cargo.toml"
-            "fexpress-main/fexpress-derive/Cargo.toml"
+            "fexpress-main/fexpress-derive/Cargo.toml",
             "fexpress-py/Cargo.toml"
        ],
        "setup_py_file": "fexpress-py/setup.py",
