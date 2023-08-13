@@ -64,10 +64,10 @@ const config = {
       // Replace with your project's social card
       image: 'img/docusaurus-social-card.jpg',
       navbar: {
-        title: 'Feature Express',
+        title: '',
         logo: {
           alt: 'Feature Express Logo',
-          src: 'img/logo.png',
+          src: 'img/logo_blocky.png',
         },
         items: [
           {
@@ -78,7 +78,7 @@ const config = {
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/pjankiewicz/feature-express',
+            href: 'https://github.com/feature-express/feature-express',
             label: 'GitHub',
             position: 'right',
           },
@@ -105,11 +105,7 @@ const config = {
               },
               {
                 label: 'Discord',
-                href: 'https://discordapp.com/invite/feature-express',
-              },
-              {
-                label: 'Twitter',
-                href: 'https://twitter.com/feature-express',
+                href: 'https://discord.gg/zGWGRtG4)',
               },
             ],
           },

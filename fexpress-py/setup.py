@@ -9,7 +9,7 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Rust",
     ],
-    packages=["fexpress_python", "fexpress_python.sdk"],
+    packages=["fexpress", "fexpress.sdk"],
     rust_extensions=[RustExtension("fexpress.fexpress", "Cargo.toml", debug=False)],
     include_package_data=True,
     zip_safe=False,

@@ -1,10 +1,10 @@
 [package]
-name = "fexpress_python"
+name = "fexpress"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-fexpress = { path = "../fexpress" }
+fexpress-main = { path = "../fexpress-main" }
 serde_json = "1.0.96"
 
 [dependencies.serde]

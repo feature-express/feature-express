@@ -1,2 +1,6 @@
 setuptools-rust>=0.10.2
 maturin
+datamodel-code-generator
+pytest
+jupytext
+kaggle

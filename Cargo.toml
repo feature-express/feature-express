@@ -1,2 +1,2 @@
 [workspace]
-members = ["fexpress", "fexpress-py"]
+members = ["fexpress-main", "fexpress-py"]

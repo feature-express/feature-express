@@ -7,6 +7,6 @@ __pycache__
 .ipynb_checkpoints
 *.csv
 .DS_Store
-fexpress-py/tests_python/dataset
+examples/dataset
 notes/
 .git_old
