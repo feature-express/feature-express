@@ -1,7 +1,7 @@
 {
-  "id": "paweljankiewicz/featureexpress-weather",
+  "id": "paweljankiewicz/feature-express-weather",
   "title": "feature-express-weather",
-  "code_file": "weather_australia.ipynb",
+  "code_file": "feature-express-weather.ipynb",
   "language": "python",
   "kernel_type": "notebook",
   "is_private": "true",

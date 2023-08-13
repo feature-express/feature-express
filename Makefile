@@ -30,4 +30,12 @@ python_publish:
 	cd fexpress-py && maturin publish
 
 website:
-	cd website && npm run build && cd build && gsutil -m cp -r . gs://feature-express-website
+	echo "Pulling the notebook from Kaggle"
+	cd examples/kaggle_notebooks/ && kaggle kernels pull paweljankiewicz/feature-express-weather -p weather
+	echo "Converting to markdown"
+	cd examples/kaggle_notebooks/weather/ && jupyter nbconvert --to markdown --execute feature-express-weather.ipynb
+	echo "Copying to the docs as an example"
+	cp examples/kaggle_notebooks/weather/feature-express-weather.md website/docs/examples/weather.md
+	sed -i '' '/<style scoped>/,/<\/style>/d' website/docs/examples/weather.md
+	sed -i '' 's/style="[^"]*"//g' website/docs/examples/weather.md
+	cd website && npm run build && cd build && gsutil -m rsync -r . gs://feature-express-website
