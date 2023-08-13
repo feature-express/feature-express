@@ -22,12 +22,12 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: -m fexpress-py/Cargo.toml --release --out dist --sdist
+          args: -m fexpress-py/Cargo.toml --release --out dist --sdist -i python
       - name: Build wheels - universal2
         uses: PyO3/maturin-action@v1
         with:
           target: universal2-apple-darwin
-          args: -m fexpress-py/Cargo.toml --release --out dist
+          args: -m fexpress-py/Cargo.toml --release --out dist -i python
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -50,7 +50,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: -m fexpress-py/Cargo.toml --release --out dist
+          args: -m fexpress-py/Cargo.toml --release --out dist -i python
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -74,7 +74,7 @@ jobs:
           rust-toolchain: nightly
           target: ${{ matrix.target }}
           manylinux: auto
-          args: -m fexpress-py/Cargo.toml --release --out dist
+          args: -m fexpress-py/Cargo.toml --release --out dist -i python
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -97,7 +97,7 @@ jobs:
           rust-toolchain: nightly
           target: ${{ matrix.target }}
           manylinux: auto
-          args: -m fexpress-py/Cargo.toml --release --out dist
+          args: -m fexpress-py/Cargo.toml --release --out dist -i python
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -123,7 +123,7 @@ jobs:
           rust-toolchain: nightly
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: -m fexpress-py/Cargo.toml  --release --out dist
+          args: -m fexpress-py/Cargo.toml  --release --out dist -i python
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -150,7 +150,7 @@ jobs:
           rust-toolchain: nightly
           target: ${{ matrix.platform.target }}
           manylinux: musllinux_1_2
-          args: -m fexpress-py/Cargo.toml --release --out dist
+          args: -m fexpress-py/Cargo.toml --release --out dist -i python
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:

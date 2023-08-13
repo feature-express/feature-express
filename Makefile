@@ -23,8 +23,8 @@ $(QUICKTYPE_OUTPUT_DIR)/%.json:
 python:
 	cd fexpress-py && maturin build --release -i python
 	pip install target/wheels/*.whl --force-reinstall
-	cd examples && python weather_australia.py
 	cd fexpress-py && pytest tests
+	cp README.md fexpress-py/
 
 python_publish:
 	cd fexpress-py && maturin publish
