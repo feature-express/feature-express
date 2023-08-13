@@ -38,7 +38,3 @@ If you need help or have questions, feel free to ask. You can [open an issue](ht
 ## Acknowledgments
 
 We value every contribution and acknowledge the time and effort you put into helping us make FeatureExpress better. Your contribution, big or small, is greatly appreciated!
-
----
-
-Again, feel free to customize this document to suit the specific needs and practices of your project. It provides a framework for potential contributors to understand how they can participate in the project and what is expected of them.
