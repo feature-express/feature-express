@@ -42,7 +42,7 @@ jobs:
         with:
           maturin-version: v${{ env.MATURIN_VERSION }}
           command: build
-          args: --release --interpreter ${{ matrix.interpreter || env.PY_ALL }}
+          args: -m fexpress-py/Cargo.toml --release --interpreter ${{ matrix.interpreter || env.PY_ALL }}
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux || 'auto' }}
           container: ${{ matrix.container }}
@@ -65,7 +65,7 @@ jobs:
         with:
           maturin-version: v${{ env.MATURIN_VERSION }}
           command: build
-          args: --release --interpreter ${{ env.PY_ALL }}
+          args: -m fexpress-py/Cargo.toml --release --interpreter ${{ env.PY_ALL }}
           target: x86_64
           manylinux: auto
       - name: Upload wheels
