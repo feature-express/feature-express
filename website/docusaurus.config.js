@@ -82,6 +82,11 @@ const config = {
             label: 'GitHub',
             position: 'right',
           },
+          {
+            label: 'Team',
+            position: 'left',
+            to: '/team',
+          },
         ],
       },
       footer: {
