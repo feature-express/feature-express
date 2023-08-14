@@ -28,6 +28,7 @@ Event(
         "precipitation_type": "none",  # String
         "wind_data": {"speed": 5.0, "direction": "NW"},  # Dictionary with numeric and string values
     },
+)
 ```
 
 ## Attribute Data Types

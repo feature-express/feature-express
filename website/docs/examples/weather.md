@@ -241,26 +241,26 @@ print(event_context.event_context.schema())
 
     {
       "reading": {
-        "Humidity9am": "Num",
-        "WindDir3pm": "Str",
-        "MaxTemp": "Num",
-        "RainToday": "Str",
-        "Temp3pm": "Num",
-        "Rainfall": "Num",
-        "Temp9am": "Num",
-        "Pressure9am": "Num",
-        "Evaporation": "Num",
-        "Cloud9am": "Num",
-        "WindDir9am": "Str",
         "WindSpeed3pm": "Num",
-        "MinTemp": "Num",
-        "WindGustSpeed": "Num",
-        "WindSpeed9am": "Num",
-        "Cloud3pm": "Num",
-        "Sunshine": "Num",
-        "WindGustDir": "Str",
         "Pressure3pm": "Num",
-        "Humidity3pm": "Num"
+        "Cloud3pm": "Num",
+        "Cloud9am": "Num",
+        "Temp9am": "Num",
+        "WindGustDir": "Str",
+        "MaxTemp": "Num",
+        "WindDir9am": "Str",
+        "Humidity3pm": "Num",
+        "Rainfall": "Num",
+        "WindGustSpeed": "Num",
+        "Temp3pm": "Num",
+        "Humidity9am": "Num",
+        "Pressure9am": "Num",
+        "WindDir3pm": "Str",
+        "RainToday": "Str",
+        "Evaporation": "Num",
+        "Sunshine": "Num",
+        "MinTemp": "Num",
+        "WindSpeed9am": "Num"
       }
     }
 
@@ -302,70 +302,70 @@ features = event_context.query(
 print(features.head())
 ```
 
-                        obs_dt   city  avg(MaxTemp) over last 7 days   
-    0  2008-12-31 23:59:59.999  Cobar                            NaN  \
-    1  2009-01-07 23:59:59.999  Cobar                      35.899998   
-    2  2009-01-14 23:59:59.999  Cobar                      36.757145   
-    3  2009-01-21 23:59:59.999  Cobar                      35.871429   
-    4  2009-01-28 23:59:59.999  Cobar                      36.542858   
+                        obs_dt           city  avg(MaxTemp) over last 7 days   
+    0  2008-12-31 23:59:59.999  BadgerysCreek                            NaN  \
+    1  2009-01-07 23:59:59.999  BadgerysCreek                      33.171429   
+    2  2009-01-14 23:59:59.999  BadgerysCreek                      28.985714   
+    3  2009-01-21 23:59:59.999  BadgerysCreek                      34.414284   
+    4  2009-01-28 23:59:59.999  BadgerysCreek                      33.371426   
     
        min(MinTemp) over last 7 days  max(WindGustSpeed) over last 3 days   
     0                            NaN                                  NaN  \
-    1                      15.500000                                 43.0   
-    2                      16.100000                                 43.0   
-    3                      17.900000                                 59.0   
-    4                      19.700001                                 46.0   
+    1                      13.300000                                 63.0   
+    2                      11.900000                                 50.0   
+    3                      10.300000                                 43.0   
+    4                      16.299999                                 35.0   
     
        last(Humidity3pm) over past  first(Humidity9am) over future   
-    0                          NaN                            20.0  \
-    1                         19.0                            33.0   
-    2                         15.0                            24.0   
-    3                         52.0                            71.0   
-    4                         17.0                            31.0   
+    0                          NaN                            67.0  \
+    1                         19.0                            75.0   
+    2                         21.0                            43.0   
+    3                         31.0                            69.0   
+    4                         34.0                            75.0   
     
        sum(Rainfall) over last 30 days  avg(WindSpeed9am) over last 5 days   
     0                              0.0                                 NaN  \
-    1                              0.0                                15.0   
-    2                              0.0                                19.4   
-    3                              4.8                                18.6   
-    4                             31.4                                16.0   
+    1                              0.0                                 6.8   
+    2                              4.6                                 5.6   
+    3                              5.4                                 7.8   
+    4                             28.6                                 6.6   
     
        avg(WindSpeed3pm) over last 5 days  ...  first(Temp9am) over last 3 days   
     0                                 NaN  ...                              NaN  \
-    1                           12.200000  ...                        29.100000   
-    2                           10.600000  ...                        29.799999   
-    3                           17.200001  ...                        26.200001   
-    4                           10.800000  ...                        28.700001   
+    1                           18.400000  ...                        22.700001   
+    2                           16.799999  ...                        21.200001   
+    3                           14.800000  ...                        19.900000   
+    4                           17.799999  ...                        22.000000   
     
        rainy_days  non_rainy_days  avg(Cloud9am) over last 7 days   
     0           0               0                             NaN  \
-    1           0               7                        2.333333   
-    2           0              14                        1.000000   
-    3           1              20                        2.428571   
-    4           3              25                        2.571429   
+    1           0               7                             NaN   
+    2           1              13                             NaN   
+    3           1              20                             NaN   
+    4           3              25                             NaN   
     
        avg(Cloud3pm) over last 7 days  sum(Pressure9am) over last 3 days   
     0                             NaN                           0.000000  \
-    1                        4.571429                        3031.100098   
-    2                        2.571429                        3039.100098   
-    3                        4.142857                        3036.199951   
-    4                        3.428571                        3044.200195   
+    1                             NaN                        3035.200195   
+    2                             NaN                        3050.399902   
+    3                             NaN                        3045.399902   
+    4                             NaN                        3059.899902   
     
        sum(Pressure3pm) over last 3 days  last(WindGustDir) over past   
     0                           0.000000                         None  \
-    1                        3023.899902                            N   
-    2                        3030.600098                          SSW   
-    3                        3027.899902                            N   
-    4                        3036.199951                            E   
+    1                        3019.100098                            W   
+    2                        3040.699951                          ENE   
+    3                        3029.899902                            N   
+    4                        3052.699951                           NE   
     
       max(Temp3pm) over last 7 days  min(Temp9am) over last 7 days  
     0                           NaN                            NaN  
-    1                     37.599998                       0.000000  
-    2                     38.099998                      20.700001  
-    3                     37.799999                      19.900000  
-    4                     38.700001                      24.400000  
+    1                     39.799999                           17.9  
+    2                     39.200001                           17.6  
+    3                     40.700001                           17.6  
+    4                     39.599998                           20.0  
     
     [5 rows x 21 columns]
-    CPU times: user 31.4 s, sys: 306 ms, total: 31.7 s
-    Wall time: 10.7 s
+    CPU times: user 31.9 s, sys: 332 ms, total: 32.2 s
+    Wall time: 10.9 s
 
