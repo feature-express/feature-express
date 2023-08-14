@@ -1,4 +1,4 @@
-<img src="graphics/blocky_feature_express.png" width="100%"/>
+<img src="https://feature.express/img/logo_blocky.png" width="100%"/>
 
 # FeatureExpress: Time-aware Feature Engineering Library
 

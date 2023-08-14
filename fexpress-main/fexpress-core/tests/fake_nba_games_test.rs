@@ -58,6 +58,7 @@ mod tests {
             AVG(game_result = "home") OVER past WHERE entities.home = @entities.away as home_win_perc_away,
             AVG(home_stats.points) over past as avg_home_points,
             AVG(away_stats.points) over past as avg_away_points,
+            AVG(away_stats.points) over YTD as avg_away_points_ytd,
         FOR
             @entities := home
         "#.trim().replace(" past ", " last 30 day ").to_string();

@@ -2,31 +2,58 @@
 sidebar_position: 6
 ---
 
-# Time intervals
+# Intervals in FQL
 
-Defining time intervals in Feature Express is done using string definitions of the intervals based on PEST grammar.
+FQL, implemented in Feature Express, allows defining intervals over which to calculate aggregations and extract features.
 
-1. **Fixed Intervals**: These are defined with a direction, a number, and a unit. The direction can be "next", "last", "previous", "future" or "past". The number specifies the quantity, and the unit can be "millisecond", "second", "minute", "hour", "day", or "week". Units may optionally be followed by an 's'. For example, "last 5 days" would be represented as `"last 5 days"`.
+## Interval Types
 
-2. **Direction Only**: These intervals only contain a direction ("future" or "past") and are used to specify all future or all past time. For example, to represent all past time, you would simply write `"past"`.
+The main types of intervals that can be defined in FQL include Direction Only, Fixed, and Keyword intervals.
 
-3. **Keyword Intervals**: These are represented using specific keywords "ytd" (year to date), "mtd" (month to date), and "wtd" (week to date). For example, to represent the time period from the start of the current year until now, you would write `"ytd"`.
+### 1. **Direction Only**
 
-A time interval can be a fixed interval, direction only, or a keyword interval. Here are some examples:
+Direction Only intervals extract features over a relative period before or after the current row. They include:
 
-- `"last 1 week"` would represent the past week.
-- `"past"` would represent all past time.
-- `"ytd"` would represent the current year to date.
+- **`past`** - from the beginning of time until the current row
+- **`future`** - from the current row until the end of time
 
-Please make sure to follow the specific syntax and conventions when defining time intervals in Feature Express.
+Example:
 
-Apologies for the confusion. Here's the updated documentation with a table explaining each keyword interval and providing an example:
+```fql
+avg(price) over past // average price from beginning until current row
+```
 
-## Time Intervals
+### 2. **Fixed Intervals**
 
-Defining time intervals in Feature Express is done using string definitions of the intervals based on PEST grammar.
+Fixed intervals are defined with a direction, number of units, and unit:
 
-For example for the date 2023-05-17 the intervals would be. The Start Date starts at 00:00:00 and End Date ends at 23:59:59.
+- **`last`** or **`next`** - look back or forward from the current row
+- **`N`** - number of units
+- **`units`** - `milliseconds`, `seconds`, `minutes`, `hours`, `days`, `weeks`
+
+Examples:
+
+```fql
+avg(price) over last 5 days // look back 5 days
+avg(price) over next 2 weeks // look forward 2 weeks
+```
+
+These can also be expressed with variations in terminology, such as `"previous"` or `"future"`, and units may optionally be followed by an 's', like `"last 5 days"`.
+
+### 3. **Keyword Intervals**
+
+Keyword intervals represent common predefined periods and relative periods:
+
+- `yesterday`, `lastweek`, `lastmonth`, `lastyear`, `ytd`, `wtd`, `mtd`
+- `tomorrow`, `nextweek`, `nextmonth`, `nextyear`
+
+Example:
+
+```fql
+avg(sales) over lastweek // last week from current row
+```
+
+Below is a table providing examples of how keyword intervals translate into specific dates for a given date (2023-05-17):
 
 | Keyword Interval | Description                    | Start Date | End Date   |
 |------------------|--------------------------------|------------|------------|
@@ -51,3 +78,37 @@ For example for the date 2023-05-17 the intervals would be. The Start Date start
 | SameDayNextYear  | Same day of the next year      | 2024-05-17 | 2024-05-17 |
 | NextWorkDay      | Next business day              | 2023-05-18 | 2023-05-18 |
 | PreviousWorkDay  | Previous business day          | 2023-05-16 | 2023-05-16 |
+
+## Using Intervals
+
+Intervals are used in FQL inside aggregation and window functions:
+
+```fql
+avg(price) over last 5 days // average price over last 5 days
+min(price) over next 2 weeks // min price over next 2 weeks
+sum(revenue) over lastyear // total revenue over previous year
+```
+
+Where clauses can filter data over the interval:
+
+```fql
+avg(sales) over lastweek where category = 'electronics' // for electronics
+```
+
+Intervals can be combined with grouping:
+
+```fql
+avg(price) over lastmonth by category // averages grouped by category
+```
+
+## Future Plans
+
+Additional interval types like session and event-based intervals will be added to FQL in the future.
+
+## Syntax and Conventions
+
+Defining time intervals in Feature Express is done using string definitions of the intervals based on PEST grammar. Please make sure to follow the specific syntax and conventions when defining time intervals in Feature Express.
+
+## Conclusion
+
+Intervals in FQL enable powerful time-based queries and aggregations. By understanding and using these interval types, you can unlock advanced analytics capabilities within Feature Express.

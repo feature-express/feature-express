@@ -82,6 +82,7 @@ def test_query_features():
             "@entities.city as city",
             "avg(MaxTemp) over last 7 days",
             "min(MinTemp) over last 7 days",
+            "min(MinTemp) over YTD",
         ],
     )
 

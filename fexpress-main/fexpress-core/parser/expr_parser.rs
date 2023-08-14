@@ -19,7 +19,9 @@ use pest_derive::Parser;
 use strum::IntoEnumIterator;
 
 use crate::event::AttributeKey;
-use crate::interval::{Direction, DirectionOnly, FixedInterval, NewInterval, Unit};
+use crate::interval::{
+    Direction, DirectionOnly, FixedInterval, KeywordInterval, NewInterval, Unit,
+};
 use crate::parser::expr_parser::Rule::or;
 use crate::types::{FLOAT, INT};
 use crate::value::ValueType;
@@ -508,7 +510,11 @@ pub fn parse_interval(pair: Pair<Rule>) -> Result<NewInterval> {
         }),
         Rule::direction_only => {
             let v = pair.as_str().to_ascii_lowercase();
-            NewInterval::DirectionOnly(DirectionOnly::from_str(&v).unwrap())
+            NewInterval::DirectionOnly(DirectionOnly::from_str(&v)?)
+        }
+        Rule::keyword_interval => {
+            let v = pair.as_str().to_ascii_lowercase();
+            NewInterval::KeywordDate(KeywordInterval::from_str(&v)?)
         }
         _ => unimplemented!(),
     };
@@ -1004,6 +1010,23 @@ mod tests {
             let ast = generate_ast(successful_parse.unwrap());
             println!("{:?}", ast);
             matches!(ast, Expr::Alias(_, _));
+        }
+    }
+
+    #[test]
+    fn test_intervals() {
+        let expressions = vec![
+            // direction_only
+            "avg(pressure) over past where pressure == 'static'",
+            // fixed_interval
+            "avg(pressure) over last 10 days where pressure == 'static'",
+            // keyword_interval
+            "avg(pressure) over YTD where pressure == 'static'",
+        ];
+        for expr in expressions {
+            let successful_parse = ExprParser::parse(Rule::single_expression, expr);
+            let ast = generate_ast(successful_parse.unwrap());
+            println!("{:?}", ast);
         }
     }
 
