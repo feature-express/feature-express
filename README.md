@@ -2,6 +2,8 @@
 
 # FeatureExpress: Time-aware Feature Engineering Library
 
+[![PyPI version](https://badge.fury.io/py/fexpress.svg)](https://badge.fury.io/py/fexpress)
+
 ## Overview
 
 FeatureExpress is a groundbreaking in-memory feature engineering library designed for processing time-based event data. It is a hybrid between a feature engineering library and a feature store, aiming to address the complex challenges of dealing with temporal data in machine learning applications.
