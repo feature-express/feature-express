@@ -12,9 +12,6 @@ sdk: $(addprefix $(QUICKTYPE_OUTPUT_DIR)/, $(addsuffix .py, $(JSON_SCHEMAS)))
 
 $(QUICKTYPE_OUTPUT_DIR)/%.py: $(QUICKTYPE_OUTPUT_DIR)/%.json
 	datamodel-codegen --input $< --output $@ --output-model-type dataclasses.dataclass
-	# this fixes unquoted references to classes
-	#sed -i '' 's/Dict\[str, Value\],/Dict[str, "Value"],/g' $@
-	#sed -i '' 's/ValueWithAlias,/"ValueWithAlias",/g' $@
 	quicktype -o $@ $(QUICKTYPE_FLAGS) $<
 
 $(QUICKTYPE_OUTPUT_DIR)/%.json:
@@ -26,8 +23,14 @@ python:
 	cd fexpress-py && pytest tests
 	cp README.md fexpress-py/
 
+python_debug:
+	cd fexpress-py && maturin develop
+
 python_publish:
 	cd fexpress-py && maturin publish
+
+python_profile:
+	cd examples/kaggle_notebooks/weather && sudo py-spy record -n -o profile.svg -- python feature-express-weather.py
 
 website:
 	echo "Pulling the notebook from Kaggle"
@@ -39,3 +42,7 @@ website:
 	sed -i '' '/<style scoped>/,/<\/style>/d' website/docs/examples/weather.md
 	sed -i '' 's/style="[^"]*"//g' website/docs/examples/weather.md
 	cd website && npm run build && cd build && gsutil -m rsync -r . gs://feature-express-website
+
+before_push:
+	cargo fmt
+	cargo test

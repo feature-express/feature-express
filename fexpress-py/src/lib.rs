@@ -21,6 +21,9 @@ pub struct EventContext {
 impl EventContext {
     #[new]
     pub fn new() -> PyResult<Self> {
+        if cfg!(debug_assertions) {
+            println!("Running in debug mode");
+        }
         Ok(Self {
             event_context: EventContextR::new_memory(),
         })
