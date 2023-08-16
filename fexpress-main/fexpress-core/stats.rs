@@ -12,7 +12,6 @@
 #![allow(deprecated)] // Float
 #![allow(dead_code)]
 
-use ordered_float::OrderedFloat;
 use std::cmp::Ordering::{self, Equal, Greater, Less};
 use std::mem;
 

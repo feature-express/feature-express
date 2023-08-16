@@ -1,4 +1,4 @@
-use crate::ast::core::{AggregateFunction, BExpr, Expr, HavingExpr, HavingExprType};
+use crate::ast::core::{AggregateFunction, BExpr, Expr, HavingExprType};
 
 // the idea is to merge queries but only until some step.
 // for example we can merge the expressions only if they share the same root

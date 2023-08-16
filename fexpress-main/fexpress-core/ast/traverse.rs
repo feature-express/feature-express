@@ -124,9 +124,9 @@ impl Expr {
                 ExprFunc::If(e1, e2, e3) => vec![*e1.clone(), *e2.clone(), *e3.clone()],
                 ExprFunc::Clamp(e1, e2, e3) => vec![*e1.clone(), *e2.clone(), *e3.clone()],
             },
-            Expr::ParsingError(e1) => vec![],
+            Expr::ParsingError(_e1) => vec![],
             Expr::FullQuery(fq) => fq.select_exprs.clone().into_iter().collect_vec(),
-            Expr::ContextAttr(e1) => vec![],
+            Expr::ContextAttr(_e1) => vec![],
             Expr::Cons(e1, e2) => vec![*e1.clone(), *e2.clone()],
             Expr::Aggr(aggr) => {
                 let mut v = vec![];

@@ -1,7 +1,7 @@
 use crate::event_store::column_event_store::encoding::{NonNullableDecoding, NullableDecoding};
-use crate::types::{BITS_PER_FLOAT, BITS_PER_INT, FLOAT, INT, UINT};
+use crate::types::{BITS_PER_INT, INT, UINT};
 use bit_vec::BitVec;
-use ordered_float::OrderedFloat;
+
 use std::mem::size_of;
 
 #[derive(Debug, Clone)]

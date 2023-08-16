@@ -1,9 +1,8 @@
 use crate::event_store::column_event_store::encoding::{NonNullableDecoding, NullableDecoding};
 use crate::event_store::column_event_store::raw_column::{RawColumnVec, RawColumnVecGen};
-use crate::types::{FLOAT, INT};
+use crate::types::INT;
 use chrono::{NaiveDate, NaiveDateTime};
-use enum_dispatch::enum_dispatch;
-use ordered_float::OrderedFloat;
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;

@@ -20,7 +20,7 @@ use crate::interval::DatePart;
 use crate::map::Entry;
 use crate::types::{Entities, EventID, Timestamp};
 use crate::vec1::Vec1Wrapper;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 
 /// TODO: rewrite observation dates
 ///
@@ -327,7 +327,7 @@ impl ObservationDatesConfig {
     }
 
     fn check_if_sorted(&self, observation_dates: &mut ObservationDates) -> Result<()> {
-        for (entities, obs_dt) in observation_dates.inner.iter() {
+        for (_entities, obs_dt) in observation_dates.inner.iter() {
             if !is_sorted(obs_dt.0.iter()) {
                 bail!("The output of {:?} is not sorted", self);
             }

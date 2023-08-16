@@ -1,13 +1,13 @@
 use crate::map::HashMap;
 use crate::sstring::SmallString;
-use anyhow::{anyhow, Context, Result};
-use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Weekday};
+use anyhow::{anyhow, Result};
+use chrono::NaiveDate;
 
 use crate::ast::core::BExpr;
 use crate::eval::{eval_simple_expr, EvalContext};
 use crate::evaluation::date_common::*;
 use crate::event::Event;
-use crate::types::{Timestamp, INT};
+use crate::types::Timestamp;
 use crate::value::{Value, ValueType};
 
 // Usage of define_single_expr_eval_fn

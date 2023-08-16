@@ -54,7 +54,7 @@ impl Display for Expr {
             Expr::NotIn(a, b) => write!(f, "{} not in {}", *a, *b),
             Expr::Aggr(v) => write!(f, "{:}", v),
             Expr::Having(v) => write!(f, "{:}", v),
-            Expr::Alias(a, v) => write!(f, "{}", v),
+            Expr::Alias(_a, v) => write!(f, "{}", v),
             Expr::VariableAssign(a, b) => write!(f, "{}:={}", a, b),
             Expr::Select(v) => write!(f, "{}", v),
             Expr::Function(v) => write!(f, "{}", v),

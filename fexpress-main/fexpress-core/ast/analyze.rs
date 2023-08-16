@@ -1,8 +1,8 @@
-use crate::ast::core::{AggrExpr, BExpr, Expr};
+use crate::ast::core::{AggrExpr, Expr};
 use crate::ast::simple_graph::WeightedDirectedGraph;
-use crate::ast::traverse::traverse_expr;
-use crate::map::{HashMap, HashSet};
-use anyhow::{Context, Result};
+
+use crate::map::HashSet;
+
 use itertools::Itertools;
 use std::fmt::{Display, Formatter};
 use std::iter::FromIterator;

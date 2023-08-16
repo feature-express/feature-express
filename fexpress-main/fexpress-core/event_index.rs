@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -157,7 +156,7 @@ impl EventContext {
         Ok(())
     }
 
-    pub fn query(&mut self, query: String) -> Result<Vec<String>, Vec<Vec<Value>>> {
+    pub fn query(&mut self, _query: String) -> Result<Vec<String>, Vec<Vec<Value>>> {
         todo!()
     }
 
@@ -249,8 +248,8 @@ impl EventContext {
 
         let feature_names = variable_assign_feature_names
             .iter()
-            .filter(|(var_assign, feature_name)| !*var_assign)
-            .map(|(var_assign, feature_name)| feature_name)
+            .filter(|(var_assign, _feature_name)| !*var_assign)
+            .map(|(_var_assign, feature_name)| feature_name)
             .cloned()
             .collect_vec();
 
@@ -346,8 +345,8 @@ impl EventContext {
                     !matches!(feature.expr, Expr::VariableAssign(_, _)),
                 )
             })
-            .filter(|(orig_index, feature, is_real)| *is_real)
-            .map(|(orig_index, feature, is_real)| orig_index)
+            .filter(|(_orig_index, _feature, is_real)| *is_real)
+            .map(|(orig_index, _feature, _is_real)| orig_index)
             .enumerate()
             .map(|(a, b)| (b, a))
             .collect();
@@ -390,8 +389,8 @@ impl EventContext {
                     _ => {
                         let sorted_vec = expr_result_many
                             .into_iter()
-                            .sorted_by_key(|(ts, value)| *ts)
-                            .map(|(ts, value)| value)
+                            .sorted_by_key(|(ts, _value)| *ts)
+                            .map(|(_ts, value)| value)
                             .collect_vec();
                         value_matrix[feature_index_mapping[&feature_index]] = sorted_vec;
                     }

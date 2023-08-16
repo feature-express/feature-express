@@ -13,7 +13,7 @@ use crate::algo::intersect::intersect;
 use crate::ast::core::Expr;
 use crate::eval::{eval_simple_expr, EvalContext};
 use crate::event::{AttributeName, Entity, Event, EventType};
-use crate::event_index::{EventContext, EventScopeConfig, Query};
+use crate::event_index::{EventContext, EventScopeConfig};
 use crate::event_store::{EventStore, EventStoreImpl, QueryConfig};
 use crate::interval::NaiveDateTimeInterval;
 use crate::types::{Entities, EventID, Timestamp};
@@ -333,11 +333,7 @@ impl MemoryEventStore {
             .collect()
     }
 
-    pub fn merge_sorted_events(
-        &self,
-        mut a: Vec<Arc<Event>>,
-        mut b: Vec<Arc<Event>>,
-    ) -> Vec<Arc<Event>> {
+    pub fn merge_sorted_events(&self, a: Vec<Arc<Event>>, b: Vec<Arc<Event>>) -> Vec<Arc<Event>> {
         let mut result = Vec::with_capacity(a.len() + b.len());
         let mut i = 0;
         let mut j = 0;
@@ -646,7 +642,7 @@ impl EventStore for MemoryEventStore {
     fn query_event_type(
         &self,
         event_type: &EventType,
-        query_config: &QueryConfig,
+        _query_config: &QueryConfig,
         interval: Option<&NaiveDateTimeInterval>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         let index_by_event_type_entity_ts = self.index_by_event_type_entity_ts.read().unwrap();
@@ -657,7 +653,7 @@ impl EventStore for MemoryEventStore {
             for treemap in entity_map.values() {
                 let mut keys = Vec::new();
                 if let Some(interval) = interval {
-                    for (timestamp, key_set) in
+                    for (_timestamp, key_set) in
                         treemap.range(interval.start_dt_safe()..=interval.end_dt_safe())
                     {
                         keys.extend(key_set.iter().cloned());
@@ -686,7 +682,7 @@ impl EventStore for MemoryEventStore {
     fn query_interval(
         &self,
         interval: &NaiveDateTimeInterval,
-        query_config: &QueryConfig,
+        _query_config: &QueryConfig,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         let index_by_event_type_entity_ts = self.index_by_event_type_entity_ts.read().unwrap();
 
@@ -695,7 +691,7 @@ impl EventStore for MemoryEventStore {
         for entity_map in index_by_event_type_entity_ts.values() {
             for treemap in entity_map.values() {
                 let mut keys = Vec::new();
-                for (timestamp, key_set) in
+                for (_timestamp, key_set) in
                     treemap.range(interval.start_dt_safe()..=interval.end_dt_safe())
                 {
                     keys.extend(key_set.iter().cloned());

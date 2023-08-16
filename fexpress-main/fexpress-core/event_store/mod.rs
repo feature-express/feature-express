@@ -4,7 +4,6 @@ use crate::map::{HashMap, HashSet};
 use crate::sstring::SmallString;
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
-use serde::{Deserialize, Serialize};
 
 use crate::event::{AttributeName, Entity, Event, EventType};
 use crate::interval::NaiveDateTimeInterval;
@@ -12,10 +11,9 @@ use crate::types::{Entities, EventID, Timestamp};
 use crate::value::{Value, ValueType};
 
 use crate::ast::core::Expr;
-use crate::event_index::{EventScopeConfig, QueryConfig};
+use crate::event_index::QueryConfig;
 use crate::event_store::postgres::postgres_event_store::PostgresEventStore;
 use crate::event_store::row_event_store::memory_event_store::MemoryEventStore;
-use schemars::JsonSchema;
 
 pub mod column_event_store;
 pub mod postgres;

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, bail, Context, Error, Result};
 use chrono::NaiveDateTime;
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
+
 use vec1::Vec1;
 
 use crate::aggr::eval_agg_using_partial_agg;
@@ -25,9 +25,7 @@ use crate::evaluation::text::{
     eval_starts_with, eval_substr, eval_trim, eval_upper,
 };
 use crate::event::{AttributeKey, AttributeName, EntityType, Event, EventType};
-use crate::event_index::{
-    check_agg_event_type_index, EventContext, EventScopeConfig, Query, QueryConfig,
-};
+use crate::event_index::{check_agg_event_type_index, EventContext, EventScopeConfig, QueryConfig};
 use crate::event_store::EventStore;
 use crate::interval::NaiveDateTimeInterval;
 use crate::map::HashMap;
@@ -505,12 +503,12 @@ pub fn eval_simple_expr(
             v.iter().map(|v| SmallString::from(v).clone()).collect_vec(),
         )),
         Expr::ParsingError(e) => Err(anyhow!(e.clone())),
-        Expr::VariableAssign(variable_name, expression) => {
+        Expr::VariableAssign(_variable_name, expression) => {
             eval_simple_expr(expression, event, context, stored_variables)
         }
-        Expr::Select(select_expr) => todo!(),
-        Expr::Cons(lhs, rhs) => todo!(),
-        Expr::FullQuery(full_query) => panic!("Full queries are evaluated using a different path"),
+        Expr::Select(_select_expr) => todo!(),
+        Expr::Cons(_lhs, _rhs) => todo!(),
+        Expr::FullQuery(_full_query) => panic!("Full queries are evaluated using a different path"),
     };
     result
 }
@@ -1381,6 +1379,7 @@ mod tests {
     use std::str::FromStr;
 
     use chrono::{Duration, TimeZone, Utc};
+    use ordered_float::OrderedFloat;
 
     use crate::event::{AttributeName, Entity};
     use crate::event_index::EventContext;
@@ -1621,42 +1620,65 @@ mod tests {
 
     #[test]
     fn test_in_str() {
-        let result = eval_expr("count(type) over past where type in ('a','b','c','d')".into(), "a".into());
+        let result = eval_expr(
+            "count(type) over past where type in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
-        let result = eval_expr("count(*) over past where type in ('a','b','c','d')".into(), "a".into());
+        let result = eval_expr(
+            "count(*) over past where type in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
     }
 
     #[test]
     fn test_not_in_str() {
-        let result = eval_expr("count(type) over past where type not in ('a','b','c','d')".into(), "a".into());
+        let result = eval_expr(
+            "count(type) over past where type not in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
-        let result = eval_expr("count(*) over past where type not in ('a','b','c','d')".into(), "a".into());
+        let result = eval_expr(
+            "count(*) over past where type not in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
     }
 
     #[test]
     fn test_in_int() {
-        let result = eval_expr("count(type) over past where tempint in (1,2,3,4)".into(), "a".into());
+        let result = eval_expr(
+            "count(type) over past where tempint in (1,2,3,4)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
     }
 
     #[test]
     fn test_not_in_int() {
-        let result = eval_expr("count(type) over past where tempint not in (1,2,3,4)".into(), "a".into());
+        let result = eval_expr(
+            "count(type) over past where tempint not in (1,2,3,4)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
     }
 
     #[test]
     fn test_in_float() {
-        let result = eval_expr("count(type) over past where temp in (1.0,2.0,3.0, 4.0)".into(), "a".into());
+        let result = eval_expr(
+            "count(type) over past where temp in (1.0,2.0,3.0, 4.0)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
     }
 
     #[test]
     fn test_not_in_float() {
-        let result =
-            eval_expr("count(type) over past where temp not in (1.0, 2.0 , 3.0, 4.0)".into(), "a".into());
+        let result = eval_expr(
+            "count(type) over past where temp not in (1.0, 2.0 , 3.0, 4.0)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
     }
 
@@ -1801,7 +1823,10 @@ mod tests {
 
     #[test]
     fn test_having_max_2() {
-        let result = eval_expr("first(event_time) over past having max pressure".into(), "a".into());
+        let result = eval_expr(
+            "first(event_time) over past having max pressure".into(),
+            "a".into(),
+        );
         assert_eq!(
             result,
             Value::DateTime(NaiveDateTime::from_str("2020-01-06T00:00:00").unwrap())
@@ -1810,7 +1835,10 @@ mod tests {
 
     #[test]
     fn test_having_max_event_time() {
-        let result = eval_expr("first(event_time) over past having max temp".into(), "a".into());
+        let result = eval_expr(
+            "first(event_time) over past having max temp".into(),
+            "a".into(),
+        );
         assert_eq!(
             result,
             Value::DateTime(NaiveDateTime::from_str("2020-01-07T00:00:00").unwrap())

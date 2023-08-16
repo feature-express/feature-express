@@ -1,5 +1,5 @@
 use petgraph::visit::Walker;
-use std::cmp::max;
+
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 

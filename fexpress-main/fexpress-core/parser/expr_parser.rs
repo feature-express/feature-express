@@ -22,7 +22,7 @@ use crate::event::AttributeKey;
 use crate::interval::{
     Direction, DirectionOnly, FixedInterval, KeywordInterval, NewInterval, Unit,
 };
-use crate::parser::expr_parser::Rule::or;
+
 use crate::types::{FLOAT, INT};
 use crate::value::ValueType;
 

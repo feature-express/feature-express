@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 
 use crate::eval::{eval_simple_expr, extract_interval_events, EvalContext};
 use crate::event::Event;
-use crate::event_index::QueryConfig;
+
 use crate::interval::NaiveDateTimeInterval;
 use crate::map::HashMap;
 use crate::partial_agg::*;
@@ -226,7 +226,7 @@ mod tests {
     use crate::datetime_utils::add_ms;
     use crate::eval::eval_agg;
     use crate::event::{AttributeName, Entity, EntityType, EventType};
-    use crate::event_index::{check_event_type_index, EventContext, EventScopeConfig};
+    use crate::event_index::{check_event_type_index, EventContext, EventScopeConfig, QueryConfig};
     use crate::obs_dates::{ObsDate, ObservationTime};
     use crate::types::FLOAT;
 

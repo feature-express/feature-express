@@ -13,7 +13,7 @@ use postgres::{Client, NoTls, Row};
 
 use crate::datetime_utils::parse_utc_from_str;
 use crate::event::{AttributeName, Entity, Event, EventType};
-use crate::event_index::{EventScopeConfig, QueryConfig};
+use crate::event_index::QueryConfig;
 use crate::event_store::EventStore;
 use crate::interval::NaiveDateTimeInterval;
 use crate::types::{Entities, EventID, Timestamp};
@@ -151,7 +151,7 @@ impl PostgresEventStore {
             .expect("Cannot commit transaction with the schema update");
     }
 
-    fn row_to_event(row: Row) -> Event {
+    fn row_to_event(_row: Row) -> Event {
         unimplemented!()
         // let event_id: String = row.get(0);
         // let entity_id: String = row.get(1);
@@ -215,7 +215,7 @@ pub fn kstring_opt_to_string(v: Option<SmallString>) -> String {
 }
 
 impl EventStore for PostgresEventStore {
-    fn insert(&self, event: Event) -> Result<()> {
+    fn insert(&self, _event: Event) -> Result<()> {
         unimplemented!();
         // self.update_schema(&event);
         //
@@ -251,7 +251,7 @@ impl EventStore for PostgresEventStore {
         // transaction.commit().expect("Error committing transaction");
     }
 
-    fn insert_batch(&self, events: Vec<Event>) -> Result<()> {
+    fn insert_batch(&self, _events: Vec<Event>) -> Result<()> {
         unimplemented!()
         // let events_without_entity_id: Vec<EventWithoutEntity> =
         //     events.iter().map(|event| event.clone().into()).collect();
@@ -278,7 +278,7 @@ impl EventStore for PostgresEventStore {
         // }
     }
 
-    fn get_entities(&self, experiment_id: &Option<SmallString>) -> Vec<Entity> {
+    fn get_entities(&self, _experiment_id: &Option<SmallString>) -> Vec<Entity> {
         unimplemented!()
         // let mut client = self.client.write().unwrap();
         // let mut entities = vec![];
@@ -302,7 +302,7 @@ impl EventStore for PostgresEventStore {
         // entities
     }
 
-    fn update_schema(&self, event: &Event) {
+    fn update_schema(&self, _event: &Event) {
         unimplemented!()
         // let mut client = self.client.write().unwrap();
         // if let Some(attrs) = &event.attrs {
@@ -344,11 +344,11 @@ impl EventStore for PostgresEventStore {
 
     fn query_entity_event_type(
         &self,
-        entities: &Entities,
-        event_type: &EventType,
-        interval: &NaiveDateTimeInterval,
-        query_config: &QueryConfig,
-        experiment_id: &Option<SmallString>,
+        _entities: &Entities,
+        _event_type: &EventType,
+        _interval: &NaiveDateTimeInterval,
+        _query_config: &QueryConfig,
+        _experiment_id: &Option<SmallString>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         unimplemented!();
         // let experiment_id = experiment_id.as_ref().map(|v| v.to_string());
@@ -398,10 +398,10 @@ impl EventStore for PostgresEventStore {
 
     fn query_entity_interval(
         &self,
-        entities: &Entities,
-        interval: &NaiveDateTimeInterval,
-        query_config: &QueryConfig,
-        experiment_id: &Option<SmallString>,
+        _entities: &Entities,
+        _interval: &NaiveDateTimeInterval,
+        _query_config: &QueryConfig,
+        _experiment_id: &Option<SmallString>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         unimplemented!()
         // let experiment_id = kstring_opt_to_string(experiment_id.clone());
@@ -451,9 +451,9 @@ impl EventStore for PostgresEventStore {
 
     fn query_entity(
         &self,
-        entities: &Entities,
-        query_config: &QueryConfig,
-        experiment_id: Option<SmallString>,
+        _entities: &Entities,
+        _query_config: &QueryConfig,
+        _experiment_id: Option<SmallString>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         unimplemented!()
         // let experiment_id = kstring_opt_to_string(experiment_id);
@@ -497,31 +497,31 @@ impl EventStore for PostgresEventStore {
 
     fn query_event_type(
         &self,
-        event_type: &EventType,
-        query_config: &QueryConfig,
-        interval: Option<&NaiveDateTimeInterval>,
+        _event_type: &EventType,
+        _query_config: &QueryConfig,
+        _interval: Option<&NaiveDateTimeInterval>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         todo!()
     }
 
     fn query_interval(
         &self,
-        interval: &NaiveDateTimeInterval,
-        query_config: &QueryConfig,
+        _interval: &NaiveDateTimeInterval,
+        _query_config: &QueryConfig,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         todo!()
     }
 
     fn filter_events(
         &self,
-        condition: &Expr,
-        query_config: &QueryConfig,
-        stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
+        _condition: &Expr,
+        _query_config: &QueryConfig,
+        _stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
     ) -> Result<Vec<Arc<Event>>> {
         todo!()
     }
 
-    fn get_event_by_id(&self, event_id: &EventID) -> Option<Arc<Event>> {
+    fn get_event_by_id(&self, _event_id: &EventID) -> Option<Arc<Event>> {
         todo!()
     }
 
@@ -533,7 +533,7 @@ impl EventStore for PostgresEventStore {
         todo!()
     }
 
-    fn get_attribute_value_type(&self, name: &AttributeName) -> Option<HashSet<ValueType>> {
+    fn get_attribute_value_type(&self, _name: &AttributeName) -> Option<HashSet<ValueType>> {
         unimplemented!()
         // let mut value_types: HashSet<ValueType> = HashSet::new();
         // let mut client = self.client.write().unwrap();
@@ -597,7 +597,7 @@ impl EventStore for PostgresEventStore {
         //     .expect("Error deleting experiments");
     }
 
-    fn flush_experiment(&self, experiment_id: SmallString) {
+    fn flush_experiment(&self, _experiment_id: SmallString) {
         unimplemented!();
         // let mut client = self.client.write().unwrap();
         // let mut transaction = client.transaction().expect("Error getting transaction");

@@ -19,7 +19,7 @@ use crate::types::{Entities, EventID, Timestamp};
 use crate::value::{Value, ValueType};
 use schemars::gen::SchemaGenerator;
 use schemars::schema::{InstanceType, Schema, SchemaObject};
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum AttributeKey {
