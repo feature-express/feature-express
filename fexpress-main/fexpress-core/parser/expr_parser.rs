@@ -742,7 +742,7 @@ mod tests {
 
     use crate::eval::{eval_simple_expr, EvalContext};
     use crate::event::{Entity, Event, EventType};
-    use crate::event_index::{EventContext, QueryConfig};
+    use crate::event_index::{EventContext, EventScopeConfig, QueryConfig};
     use crate::features::Feature;
     use crate::obs_dates::ObsDate;
     use crate::parser::error_helper::friendly_pest_error;
@@ -1087,7 +1087,7 @@ mod tests {
         event_context.new_event(event.clone());
         let context = EvalContext {
             event_index: Some(&event_context),
-            event_query_config: Default::default(),
+            event_query_config: Some(EventScopeConfig::AllEvents),
             query_config: Some(&query_config),
             entities: Some(btreemap!["a".into() => "1".into()]),
             experiment_id: None,

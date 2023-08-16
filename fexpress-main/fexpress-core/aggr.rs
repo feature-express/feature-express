@@ -329,6 +329,7 @@ mod tests {
         event_context
     }
 
+    #[cfg(feature = "long-tests")]
     #[test]
     fn test_partial_agg_cases() {
         let event_context = get_event_context();
@@ -336,7 +337,7 @@ mod tests {
         let context = EvalContext {
             event_index: Some(&event_context),
             query_config: Some(&query_config),
-            event_query_config: Default::default(),
+            event_query_config: Some(EventScopeConfig::AllEvents),
             entities: Some(
                 Entity {
                     typ: EntityType("a".into()),

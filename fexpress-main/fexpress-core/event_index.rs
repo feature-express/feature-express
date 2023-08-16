@@ -119,6 +119,7 @@ pub struct FeatureDef {
     pub extractor: Box<dyn FeatureExtractor>,
 }
 
+#[derive(Debug)]
 pub struct EventContext {
     /// index for keeping the events
     pub event_store: EventStoreImpl,

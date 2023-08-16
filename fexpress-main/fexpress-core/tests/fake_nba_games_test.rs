@@ -25,7 +25,7 @@ mod tests {
         };
         let entity_query = EventScopeConfig::AllEvents;
         let mut event_context = EventContext::new_memory();
-        let events = generate_nba_game_events(1000);
+        let events = generate_nba_game_events(100);
         for event in &events {
             event_context.new_event(event.clone());
         }

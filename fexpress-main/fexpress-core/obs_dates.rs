@@ -137,23 +137,23 @@ pub trait ObservationDatesT {
 ///             the observation dates are probably tied to entities and controlling both should
 ///             be possible.
 ///
-///             The configuration should control for what entities we are calculating the features
-///             and on which observation dates. Even if we don't care too much about one of those
-///             things it still exists as configuration.
+/// The configuration should control for what entities we are calculating the features
+/// and on which observation dates. Even if we don't care too much about one of those
+/// things it still exists as configuration.
 ///
-///             The whole process can be seen as 2 phases (in the configurable setting)
-///             1) selecting entities with some conditions based on the seen events or keeping all
-///                of them if we don't care about it
-///             2) selecting the observation dates for those entities. The observation dates can be
-///                - interval based (not depending on the events [only to the point of selecting the
-///                  range of the activity of the entity])
-///                - event based
+/// The whole process can be seen as 2 phases (in the configurable setting)
+/// 1) selecting entities with some conditions based on the seen events or keeping all
+///    of them if we don't care about it
+/// 2) selecting the observation dates for those entities. The observation dates can be
+///    - interval based (not depending on the events [only to the point of selecting the
+///   range of the activity of the entity])
+///    - event based
 ///
-///             Overriding the configuration by providing a list of pairs (obs_dt, entity_id)
+/// Overriding the configuration by providing a list of pairs (obs_dt, entity_id)
 ///
-///             I wonder if the best idea for more configurable options wouldn't be best if they
-///             were implemented as generators in Python. The generator is given a stream of
-///             events and the role of the generator is to return pairs of (obs_dt, entity_id).
+/// I wonder if the best idea for more configurable options wouldn't be best if they
+/// were implemented as generators in Python. The generator is given a stream of
+/// events and the role of the generator is to return pairs of (obs_dt, entity_id).
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[allow(dead_code)]
 pub enum ObservationDatesConfig {

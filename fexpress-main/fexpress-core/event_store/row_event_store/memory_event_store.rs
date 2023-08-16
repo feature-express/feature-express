@@ -729,7 +729,7 @@ impl EventStore for MemoryEventStore {
         let context = EvalContext {
             event_index: Some(&binding),
             query_config: Some(query_config),
-            event_query_config: Default::default(),
+            event_query_config: Some(EventScopeConfig::AllEvents),
             entities: Default::default(),
             experiment_id: None,
             obs_date: None,
