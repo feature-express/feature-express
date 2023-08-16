@@ -38,11 +38,12 @@ use crate::stats::Stats;
 use crate::types::{Entities, Timestamp, FLOAT, INT};
 use crate::value::{Value, ValueType, ValueWithAlias, ValueWithTimestamp};
 
+#[derive(Default)]
 pub struct EvalContext<'a> {
-    pub event_index: &'a EventContext,
-    pub event_query_config: EventScopeConfig,
-    pub query_config: &'a QueryConfig,
-    pub entities: Entities,
+    pub event_index: Option<&'a EventContext>,
+    pub event_query_config: Option<EventScopeConfig>,
+    pub query_config: Option<&'a QueryConfig>,
+    pub entities: Option<Entities>,
     pub experiment_id: Option<SmallString>,
     pub obs_date: Option<ObsDate>,
     pub obs_time: Option<ObservationTime>,
@@ -127,7 +128,12 @@ fn eval_expr_many_obsdates(
         .inner
     {
         let event = if let Some(event_id) = &obs_date.event_id {
-            if let Some(event) = context.event_index.event_store.get_event_by_id(&event_id) {
+            if let Some(event) = context
+                .event_index
+                .ok_or(anyhow!("index needed"))?
+                .event_store
+                .get_event_by_id(&event_id)
+            {
                 Some(event)
             } else {
                 None
@@ -138,7 +144,7 @@ fn eval_expr_many_obsdates(
 
         let context = EvalContext {
             event_index: context.event_index,
-            query_config: &query_config,
+            query_config: Some(&query_config),
             event_query_config: context.event_query_config.clone(),
             entities: context.entities.clone(),
             experiment_id: context.experiment_id.clone(),
@@ -271,7 +277,11 @@ pub fn eval_simple_expr(
                 .datetime,
         )),
         Expr::EntityId(typ) => {
-            let entities_map = context_with_context?.entities.clone();
+            let entities_map = context_with_context?
+                .entities
+                .as_ref()
+                .ok_or(anyhow!("Entities needed"))?
+                .clone();
             Ok(Value::Str(
                 entities_map
                     .get(typ)
@@ -522,10 +532,15 @@ fn evaluate_context_attribute(
         if first_element == "entities" {
             let entity_type = EntityType(second_element.clone());
             let eval_context = context.with_context(|| format!("Context needed to evaluate context attributes {:?} when evaluating expression {:?}", attribute.clone(), expr))?;
-            let entity_id = eval_context.entities.get(&entity_type).context(format!(
-                "Cannot find entity type {:?} to evaluate expression {:?}",
-                entity_type, expr
-            ))?;
+            let entity_id = eval_context
+                .entities
+                .as_ref()
+                .ok_or(anyhow!("Entities needed"))?
+                .get(&entity_type)
+                .context(format!(
+                    "Cannot find entity type {:?} to evaluate expression {:?}",
+                    entity_type, expr
+                ))?;
             return Ok(Value::Str(entity_id.0.clone()));
         }
     }
@@ -647,15 +662,15 @@ fn evaluate_untyped_attribute(
     //       from the where expression.
 
     let attribute_name = a!(attribute.to_kstring());
-    let value_types: Vec<ValueType> = context
-        .event_index
+    let event_index = context.event_index.ok_or(anyhow!("event index needed"))?;
+    let value_types: Vec<ValueType> = event_index
         .event_store
         .get_attribute_value_type(&attribute_name)
         .with_context(|| {
             format!(
                 "Cannot find attribute name {:} in the schema - available attributes are {:?}",
                 attribute,
-                context.event_index.event_store.get_schema()
+                event_index.event_store.get_schema()
             )
         })?
         .into_iter()
@@ -787,7 +802,10 @@ pub fn eval_agg(
     }
 
     if let Some(interval_events) = interval_events {
-        let interval_events_concat = context.event_index.concat_events(interval_events);
+        let interval_events_concat = context
+            .event_index
+            .ok_or(anyhow!("event index needed"))?
+            .concat_events(interval_events);
         if agg.groupby.is_some() {
             eval_groupby_agg(agg, &interval_events_concat, context, stored_variables)
         } else if agg.having.is_some() {
@@ -961,36 +979,36 @@ pub fn extract_interval_events(
     context: &EvalContext,
     interval: &NaiveDateTimeInterval,
 ) -> Option<Vec<(NaiveDateTime, Vec<Arc<Event>>)>> {
-    match &context.event_query_config {
+    match &context.event_query_config.as_ref()? {
         EventScopeConfig::RelatedEntitiesEvents(selected_entities) => {
             let mut new_entities = BTreeMap::new();
-            context.entities.iter().for_each(|(k, v)| {
+            context.entities.as_ref()?.iter().for_each(|(k, v)| {
                 if selected_entities.contains(k) {
                     new_entities.insert(k.clone(), v.clone());
                 }
             });
             let event_type_index_name = check_agg_event_type_index(agg_expr);
             let interval_events: Option<Vec<_>> = match event_type_index_name {
-                Some(event_type) => context.event_index.event_store.query_entity_event_type(
-                    &context.entities,
+                Some(event_type) => context.event_index?.event_store.query_entity_event_type(
+                    context.entities.as_ref()?,
                     &EventType(from_string!(event_type)),
                     interval,
-                    context.query_config,
+                    context.query_config?,
                     &context.experiment_id,
                 ),
-                None => context.event_index.event_store.query_entity_interval(
-                    &context.entities,
+                None => context.event_index?.event_store.query_entity_interval(
+                    context.entities.as_ref()?,
                     interval,
-                    context.query_config,
+                    context.query_config?,
                     &context.experiment_id,
                 ),
             };
             interval_events
         }
         EventScopeConfig::AllEvents => context
-            .event_index
+            .event_index?
             .event_store
-            .query_interval(interval, context.query_config),
+            .query_interval(interval, context.query_config?),
     }
 }
 
@@ -1452,15 +1470,17 @@ mod tests {
         let event_query_config =
             EventScopeConfig::RelatedEntitiesEvents(vec![EntityType("1".into())]);
         let context = EvalContext {
-            entities: Entity {
-                typ: "1".into(),
-                id: "1".into(),
-            }
-            .into(),
-            query_config: &query_config,
+            entities: Some(
+                Entity {
+                    typ: "1".into(),
+                    id: "1".into(),
+                }
+                .into(),
+            ),
+            query_config: Some(&query_config),
             experiment_id: None,
             obs_date: None,
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_types: vec![],
             event: None,
             obs_time: Some(ObservationTime {
@@ -1468,7 +1488,7 @@ mod tests {
                 event_id: None,
             }),
             event_on_obs_date: None,
-            event_query_config,
+            event_query_config: Some(event_query_config),
         };
 
         let hm = HashMap::new();
@@ -1498,15 +1518,17 @@ mod tests {
         let datetime = Utc.ymd(2020, 1, 10).and_hms(0, 0, 0).naive_utc().into();
 
         let context = EvalContext {
-            entities: Entity {
-                typ: "".into(),
-                id: "1".into(),
-            }
-            .into(),
-            query_config: &query_config,
+            entities: Some(
+                Entity {
+                    typ: "".into(),
+                    id: "1".into(),
+                }
+                .into(),
+            ),
+            query_config: Some(&query_config),
             experiment_id: None,
             obs_date: None,
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_types: vec![],
             event: None,
             obs_time: Some(ObservationTime {
@@ -1568,15 +1590,17 @@ mod tests {
         let expr = Expr::from_str(&expr_str).unwrap();
         let datetime = Utc.ymd(2020, 1, 30).and_hms(0, 0, 0).naive_utc();
         let context = EvalContext {
-            entities: Entity {
-                typ: "location".into(),
-                id: "a".into(),
-            }
-            .into(),
-            query_config: &query_config,
+            entities: Some(
+                Entity {
+                    typ: "location".into(),
+                    id: "a".into(),
+                }
+                .into(),
+            ),
+            query_config: Some(&query_config),
             experiment_id: None,
             obs_date: None,
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_types: vec![],
             event: None,
             obs_time: Some(ObservationTime {
@@ -1944,6 +1968,21 @@ mod tests {
 
         // then
         assert_eq!(res, expected_res)
+    }
+
+    #[test]
+    fn test_eval_date_expr() {
+        let expr = Expr::from_str("date_add(date(obs_dt), 1)").unwrap();
+        let datetime = Utc.ymd(2020, 1, 30).and_hms(0, 0, 0).naive_utc();
+        let stored_variables = HashMap::new();
+        let context = EvalContext {
+            obs_time: Some(ObservationTime {
+                datetime,
+                event_id: None,
+            }),
+            ..Default::default()
+        };
+        let result = eval_simple_expr(&expr, None, Some(&context), &stored_variables);
     }
 
     #[test]

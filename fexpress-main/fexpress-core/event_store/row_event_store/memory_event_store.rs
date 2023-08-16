@@ -723,11 +723,12 @@ impl EventStore for MemoryEventStore {
         query_config: &QueryConfig,
         stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
     ) -> Result<Vec<Arc<Event>>> {
+        let binding = EventContext {
+            event_store: EventStoreImpl::MemoryEventStore(self.clone()),
+        };
         let context = EvalContext {
-            event_index: &EventContext {
-                event_store: EventStoreImpl::MemoryEventStore(self.clone()),
-            },
-            query_config,
+            event_index: Some(&binding),
+            query_config: Some(query_config),
             event_query_config: Default::default(),
             entities: Default::default(),
             experiment_id: None,

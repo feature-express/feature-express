@@ -265,7 +265,7 @@ mod tests {
         for obs_date in obs_dates.iter() {
             let context = EvalContext {
                 event_index: context.event_index,
-                query_config: &query_config,
+                query_config: Some(&query_config),
                 event_query_config: context.event_query_config.clone(),
                 entities: context.entities.clone(),
                 experiment_id: context.experiment_id.clone(),
@@ -334,14 +334,16 @@ mod tests {
         let event_context = get_event_context();
         let query_config = QueryConfig::default();
         let context = EvalContext {
-            event_index: &event_context,
-            query_config: &query_config,
+            event_index: Some(&event_context),
+            query_config: Some(&query_config),
             event_query_config: Default::default(),
-            entities: Entity {
-                typ: EntityType("a".into()),
-                id: "b".into(),
-            }
-            .into(),
+            entities: Some(
+                Entity {
+                    typ: EntityType("a".into()),
+                    id: "b".into(),
+                }
+                .into(),
+            ),
             experiment_id: None,
             obs_date: Some(ObsDate {
                 inner: vec1![

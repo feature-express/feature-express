@@ -14,77 +14,71 @@ use crate::value::{Value, ValueType};
 
 define_single_expr_eval_fn!(
     eval_hour,
-    Value::DateTime(datetime) => datetime,
-    |datetime| Ok(Value::Int(datetime_hour_common(datetime))),
-    "Hour"
+    "Hour",
+    Value::DateTime(datetime) => Ok(Value::Int(datetime_hour_common(datetime)))
 );
 
 define_single_expr_eval_fn!(
     eval_minute,
-    Value::DateTime(datetime) => datetime,
-    |datetime| Ok(Value::Int(datetime_minute_common(datetime))),
-    "Minute"
+    "Minute",
+    Value::DateTime(datetime) => Ok(Value::Int(datetime_minute_common(datetime)))
 );
 
 define_single_expr_eval_fn!(
     eval_second,
-    Value::DateTime(datetime) => datetime,
-    |datetime| Ok(Value::Int(datetime_second_common(datetime))),
-    "Second"
+    "Second",
+    Value::DateTime(datetime) => Ok(Value::Int(datetime_second_common(datetime)))
 );
 
 define_single_expr_eval_fn!(
     eval_microsecond,
-    Value::DateTime(datetime) => datetime,
-    |datetime| Ok(Value::Int(datetime_microsecond_common(datetime))),
-    "Microsecond"
+    "Microsecond",
+    Value::DateTime(datetime) => Ok(Value::Int(datetime_microsecond_common(datetime)))
 );
 
 define_single_expr_eval_fn!(
     eval_to_date,
-    Value::Str(v) => v,
-    |v| {
+    "ToDate",
+    Value::Str(v) => {
         match eval_to_date_common(&v) {
             Ok(date) => Ok(Value::Date(date)),
             Err(e) => Err(anyhow!("Error parsing date: {}", e)),
         }
     },
-    "ToDate"
+    Value::DateTime(v) => {
+        Ok(Value::Date(v.date()))
+    }
 );
 
 // Usage of define_double_expr_eval_fn
 
 define_double_expr_eval_fn!(
     eval_date_add,
-    Value::Date(date) => date, Value::Int(add) => add,
-    |date, add| Ok(Value::Date(date_add_common(date, add))),
-    "DateAdd"
+    "DateAdd",
+    (Value::Date(date), Value::Int(add)) => Ok(Value::Date(date_add_common(date, add)))
 );
 
 define_double_expr_eval_fn!(
     eval_date_sub,
-    Value::Date(date) => date, Value::Int(sub) => sub,
-    |date,sub| Ok(Value::Date(date_sub_common(date, sub))),
-    "DateSub"
+    "DateSub",
+    (Value::Date(date), Value::Int(sub)) => Ok(Value::Date(date_sub_common(date, sub)))
 );
 
 define_double_expr_eval_fn!(
     eval_date_part,
-    Value::Str(date_part) => date_part, Value::DateTime(datetime) => datetime,
-    |val1, val2| {
+    "DatePart",
+    (Value::Str(date_part), Value::DateTime(datetime)) => {
         match eval_date_part_common(date_part, datetime) {
             Ok(int) => Ok(Value::Int(int)),
             Err(e) => Err(anyhow!("Error extracting date part: {}", e)),
         }
-    },
-    "DatePart"
+    }
 );
 
 define_double_expr_eval_fn!(
     eval_format_date,
-    Value::Str(date_format) => date_format, Value::Date(date) => date,
-    |val1, val2| Ok(Value::Str(SmallString::from(date.format(date_format.as_str()).to_string()))),
-    "FormatDate"
+    "FormatDate",
+    (Value::Str(date_format), Value::Date(date)) => Ok(Value::Str(SmallString::from(date.format(date_format.as_str()).to_string())))
 );
 
 pub fn eval_date_diff(
@@ -106,72 +100,62 @@ pub fn eval_date_diff(
 
 define_single_expr_eval_fn!(
     eval_day,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(day_of_date_common(date))),
-    "eval_day"
+    "eval_day",
+    Value::Date(date) => Ok(Value::Int(day_of_date_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_month,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(month_of_date_common(date))),
-    "eval_month"
+    "eval_month",
+    Value::Date(date) => Ok(Value::Int(month_of_date_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_year,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(year_of_date_common(date))),
-    "eval_year"
+    "eval_year",
+    Value::Date(date) => Ok(Value::Int(year_of_date_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_weekday,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(weekday_of_date_common(date))),
-    "eval_weekday"
+    "eval_weekday",
+    Value::Date(date) => Ok(Value::Int(weekday_of_date_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_day_of_year,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(day_of_year_of_date_common(date))),
-    "eval_day_of_year"
+    "eval_day_of_year",
+    Value::Date(date) => Ok(Value::Int(day_of_year_of_date_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_quarter,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(quarter_of_date_common(date))),
-    "eval_quarter"
+    "eval_quarter",
+    Value::Date(date) => Ok(Value::Int(quarter_of_date_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_is_start_of_month,
-    Value::Date(date) => date,
-    |date| Ok(Value::Bool(is_start_of_month_common(date))),
-    "eval_is_start_of_month"
+    "eval_is_start_of_month",
+    Value::Date(date) => Ok(Value::Bool(is_start_of_month_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_is_end_of_month,
-    Value::Date(date) => date,
-    |date| Ok(Value::Bool(is_end_of_month_common(date))),
-    "eval_is_end_of_month"
+    "eval_is_end_of_month",
+    Value::Date(date) => Ok(Value::Bool(is_end_of_month_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_is_weekend,
-    Value::Date(date) => date,
-    |date| Ok(Value::Bool(is_weekend_common(date))),
-    "eval_is_weekend"
+    "eval_is_weekend",
+    Value::Date(date) => Ok(Value::Bool(is_weekend_common(date)))
 );
 
 define_single_expr_eval_fn!(
     eval_week,
-    Value::Date(date) => date,
-    |date| Ok(Value::Int(week_of_date_common(date))),
-    "eval_week"
+    "eval_week",
+    Value::Date(date) => Ok(Value::Int(week_of_date_common(date)))
 );
 
 // to remove?

@@ -10,66 +10,50 @@ use crate::value::{Value, ValueType};
 
 define_single_expr_eval_fn! {
     eval_len,
-    Value::Str(ref s) => s,
-    |s: &SmallString| -> Result<Value> { Ok(Value::Int(s.len() as INT)) },
-    "len"
+    "len",
+    Value::Str(ref s) => { Ok(Value::Int(s.len() as INT)) }
 }
 
 define_single_expr_eval_fn! {
     eval_trim,
-    Value::Str(ref s) => s,
-    |s: &SmallString| -> Result<Value> { Ok(Value::Str(SmallString::from(s.trim()))) },
-    "trim"
+    "trim",
+    Value::Str(ref s) => { Ok(Value::Str(SmallString::from(s.trim()))) }
 }
 
 define_single_expr_eval_fn! {
     eval_lower,
-    Value::Str(ref s) => s,
-    |s: &SmallString| -> Result<Value> { Ok(Value::Str(SmallString::from(s.to_lowercase()))) },
-    "lower"
+    "lower",
+    Value::Str(ref s) => { Ok(Value::Str(SmallString::from(s.to_lowercase()))) }
 }
 
 define_single_expr_eval_fn! {
     eval_upper,
-    Value::Str(ref s) => s,
-    |s: &SmallString| -> Result<Value> { Ok(Value::Str(SmallString::from(s.to_uppercase()))) },
-    "upper"
+    "upper",
+    Value::Str(ref s) => { Ok(Value::Str(SmallString::from(s.to_uppercase()))) }
 }
 
 define_double_expr_eval_fn! {
     eval_concat,
-    Value::Str(ref lhs_lit) => lhs_lit, Value::Str(ref rhs_lit) => rhs_lit,
-    |lhs_lit: &SmallString, rhs_lit: &SmallString| -> Result<Value> {
-        Ok(Value::Str(SmallString::from(format!("{}{}", lhs_lit, rhs_lit))))
-    },
-    "concat"
+    "concat",
+    (Value::Str(ref lhs_lit), Value::Str(ref rhs_lit)) => Ok(Value::Str(SmallString::from(format!("{}{}", lhs_lit, rhs_lit))))
 }
 
 define_double_expr_eval_fn! {
     eval_contains,
-    Value::Str(ref s) => s, Value::Str(ref find) => find,
-    |s: &SmallString, find: &SmallString| -> Result<Value> {
-        Ok(Value::Bool(s.contains(&*find)))
-    },
-    "contains"
+    "contains",
+    (Value::Str(ref s), Value::Str(ref find)) => Ok(Value::Bool(s.contains(&*find)))
 }
 
 define_double_expr_eval_fn! {
     eval_starts_with,
-    Value::Str(ref s) => s, Value::Str(ref start) => start,
-    |s: &SmallString, start: &SmallString| -> Result<Value> {
-        Ok(Value::Bool(s.starts_with(&*start)))
-    },
-    "starts_with"
+    "starts_with",
+    (Value::Str(ref s), Value::Str(ref start)) => Ok(Value::Bool(s.starts_with(&*start)))
 }
 
 define_double_expr_eval_fn! {
     eval_ends_with,
-    Value::Str(ref s) => s, Value::Str(ref end) => end,
-    |s: &SmallString, end: &SmallString| -> Result<Value> {
-        Ok(Value::Bool(s.ends_with(&*end)))
-    },
-    "ends_with"
+    "ends_with",
+    (Value::Str(ref s), Value::Str(ref end)) => Ok(Value::Bool(s.ends_with(&*end)))
 }
 
 pub fn eval_substr(

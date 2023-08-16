@@ -742,7 +742,7 @@ mod tests {
 
     use crate::eval::{eval_simple_expr, EvalContext};
     use crate::event::{Entity, Event, EventType};
-    use crate::event_index::EventContext;
+    use crate::event_index::{EventContext, QueryConfig};
     use crate::features::Feature;
     use crate::obs_dates::ObsDate;
     use crate::parser::error_helper::friendly_pest_error;
@@ -1083,12 +1083,13 @@ mod tests {
         };
         let datetime = Utc::now().naive_utc().into();
         let mut event_context = EventContext::default();
+        let query_config = QueryConfig::default();
         event_context.new_event(event.clone());
         let context = EvalContext {
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_query_config: Default::default(),
-            query_config: &Default::default(),
-            entities: btreemap!["a".into() => "1".into()],
+            query_config: Some(&query_config),
+            entities: Some(btreemap!["a".into() => "1".into()]),
             experiment_id: None,
             obs_date: None,
             obs_time: Some(datetime),

@@ -358,18 +358,18 @@ impl EventContext {
             let mut value_matrix: Vec<Vec<Value>> =
                 vec![vec![Value::None; obs_datetime.0.len()]; n_real_features];
             let context = EvalContext {
-                entities: entities.clone(),
+                entities: Some(entities.clone()),
                 experiment_id: experiment_id.clone(),
-                query_config,
+                query_config: Some(query_config),
                 obs_date: Some(ObsDate {
                     inner: obs_datetime.0.clone(),
                 }),
-                event_index: self,
+                event_index: Some(self),
                 event_types: vec![],
                 event: None,
                 obs_time: None,
                 event_on_obs_date: None,
-                event_query_config: event_query_config.clone(),
+                event_query_config: Some(event_query_config.clone()),
             };
 
             let mut stored_variables: HashMap<SmallString, HashMap<Timestamp, Value>> =
