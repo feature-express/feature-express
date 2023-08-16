@@ -2,6 +2,11 @@ use std::fmt::{Display, Formatter};
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 
+use crate::ast::core::Expr;
+use crate::eval::{eval_simple_expr, EvalContext};
+use crate::map::HashMap;
+use crate::obs_dates::ObservationTime;
+use crate::value::Value;
 use chrono::{Datelike, Duration, NaiveDate, NaiveDateTime, Weekday};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -131,6 +136,18 @@ impl Display for SessionBasedAttr {
             "Direction: {:?}, Attribute Name: {}",
             self.direction, self.attr_name
         )
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct BetweenDatesExpressions {
+    pub from_date: Box<Expr>,
+    pub to_date: Box<Expr>,
+}
+
+impl Display for BetweenDatesExpressions {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "between {:?} to {:?}", self.from_date, self.to_date)
     }
 }
 
@@ -307,6 +324,7 @@ pub enum NewInterval {
     FixedInterval(FixedInterval),
     DirectionOnly(DirectionOnly),
     OffsetInterval(OffsetInterval),
+    BetweenDatesExpressions(BetweenDatesExpressions),
     SessionBasedMax(SessionBasedMax),
     SessionBasedAttr(SessionBasedAttr),
     SinceEvent(SinceEvent),
@@ -327,6 +345,7 @@ impl Display for NewInterval {
             NewInterval::KeywordDate(v) => write!(f, " {} ", v),
             NewInterval::EventBased(v) => write!(f, " {} ", v),
             NewInterval::EventCountBased(v) => write!(f, " {} ", v),
+            NewInterval::BetweenDatesExpressions(v) => write!(f, " {} ", v),
         }
     }
 }
@@ -616,6 +635,41 @@ impl NewInterval {
             NewInterval::SinceEvent(_) => unimplemented!(),
             NewInterval::EventBased(_) => unimplemented!(),
             NewInterval::EventCountBased(_) => unimplemented!(),
+            NewInterval::BetweenDatesExpressions(between) => {
+                let expr = Expr::from_str("date_add(date(obs_dt), 1)").unwrap();
+                let stored_variables = HashMap::new();
+                let context = EvalContext {
+                    obs_time: Some(ObservationTime {
+                        datetime: dt.clone(),
+                        event_id: None,
+                    }),
+                    ..Default::default()
+                };
+                let from_date_value =
+                    eval_simple_expr(&between.from_date, None, Some(&context), &stored_variables)
+                        .ok()?;
+                let from_date = match from_date_value {
+                    Value::None => None,
+                    Value::Wildcard => None,
+                    Value::Date(date) => Some(date.and_hms_opt(0, 0, 0)?),
+                    Value::DateTime(datetime) => Some(datetime),
+                    _ => None,
+                };
+                let to_date_value =
+                    eval_simple_expr(&between.to_date, None, Some(&context), &stored_variables)
+                        .ok()?;
+                let to_date = match to_date_value {
+                    Value::None => None,
+                    Value::Wildcard => None,
+                    Value::Date(date) => Some(date.and_hms_opt(23, 59, 59)?),
+                    Value::DateTime(datetime) => Some(datetime),
+                    _ => None,
+                };
+                Some(NaiveDateTimeInterval {
+                    start_dt: from_date,
+                    end_dt: to_date,
+                })
+            }
         }
     }
 }

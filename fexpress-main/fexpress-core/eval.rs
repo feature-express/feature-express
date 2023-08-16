@@ -1834,6 +1834,18 @@ mod tests {
     }
 
     #[test]
+    fn test_having_max_2_over_between() {
+        let result = eval_expr(
+            "first(event_time) over between date('2020-01-01') to date('2020-01-05') having max pressure".into(),
+            "a".into(),
+        );
+        assert_eq!(
+            result,
+            Value::DateTime(NaiveDateTime::from_str("2020-01-03T00:00:00").unwrap())
+        );
+    }
+
+    #[test]
     fn test_having_max_event_time() {
         let result = eval_expr(
             "first(event_time) over past having max temp".into(),

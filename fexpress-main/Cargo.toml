@@ -70,9 +70,11 @@ serial_test = "0.5.1"
 criterion = "0.5.1"
 
 [features]
+default = ["use_std_string"]
 use_hashbrown = []
 use_smol_str = []
 use_kstring = []
+use_std_string = []
 
 [lib]
 name = "fexpress_core"
