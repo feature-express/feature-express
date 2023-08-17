@@ -4,3 +4,5 @@ datamodel-code-generator
 pytest
 jupytext
 kaggle
+py-spy
+pandas
