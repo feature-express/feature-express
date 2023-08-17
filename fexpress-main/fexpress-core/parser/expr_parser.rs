@@ -493,19 +493,19 @@ pub fn parse_interval(pair: Pair<Rule>) -> Result<NewInterval> {
         Rule::fixed_interval => NewInterval::FixedInterval(FixedInterval {
             direction: Direction::from_str(
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::direction)
-                    .context(format!("Cannot parse interval {:?}", pair))?
+                    .with_context(|| format!("Cannot parse interval {:?}", pair))?
                     .as_str(),
             )
             .unwrap(),
             int: usize::from_str(
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::integer)
-                    .context(format!("Cannot parse interval {:?}", pair))?
+                    .with_context(|| format!("Cannot parse interval {:?}", pair))?
                     .as_str(),
             )
             .unwrap(),
             unit: Unit::from_str(
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::unit)
-                    .context(format!("Cannot parse interval {:?}", pair))?
+                    .with_context(|| format!("Cannot parse interval {:?}", pair))?
                     .as_str()
                     .trim(),
             )
@@ -522,11 +522,11 @@ pub fn parse_interval(pair: Pair<Rule>) -> Result<NewInterval> {
         Rule::between_dates => {
             let date_from_expr =
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::date_from_expr)
-                    .context(format!("Cannot parse interval {:?}", pair))?;
+                    .with_context(|| format!("Cannot parse interval {:?}", pair))?;
             let date_from_expr = build_term(date_from_expr);
             let date_to_expr =
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::date_to_expr)
-                    .context(format!("Cannot parse interval {:?}", pair))?;
+                    .with_context(|| format!("Cannot parse interval {:?}", pair))?;
             let date_to_expr = build_term(date_to_expr);
             NewInterval::BetweenDatesExpressions(BetweenDatesExpressions {
                 from_date: Box::new(date_from_expr),

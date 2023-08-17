@@ -157,18 +157,18 @@ fn eval_expr_many_obsdates(
 
         match event {
             Some(event) => {
-                let event = (*event).clone();
+                let event_ref = event.clone();
                 result.insert(
                     obs_date.datetime,
-                    eval_simple_expr(expr, Some(&event), Some(&context), stored_variables)
-                        .context(format!("Cannot evaluate expression {:?}", expr))?,
+                    eval_simple_expr(expr, Some(&*event_ref), Some(&context), stored_variables)
+                        .with_context(|| format!("Cannot evaluate expression {:?}", expr))?,
                 );
             }
             None => {
                 result.insert(
                     obs_date.datetime,
                     eval_simple_expr(expr, None, Some(&context), stored_variables)
-                        .context(format!("Cannot evaluate expression {:?}", expr))?,
+                        .with_context(|| format!("Cannot evaluate expression {:?}", expr))?,
                 );
             }
         }
@@ -283,7 +283,7 @@ pub fn eval_simple_expr(
             Ok(Value::Str(
                 entities_map
                     .get(typ)
-                    .context(format!("Cannot extract entity type {:?}", typ))?
+                    .with_context(|| format!("Cannot extract entity type {:?}", typ))?
                     .0
                     .clone(),
             ))
@@ -301,7 +301,8 @@ pub fn eval_simple_expr(
         | Expr::AttrDate(attribute)
         | Expr::AttrDateTime(attribute) => {
             let event = event_with_context?;
-            let result = event.clone().extract_attribute(attribute).context(format!(
+
+            let result = event.clone().extract_attribute(attribute).with_context(|| format!(
                 "Cannot extract attribute {:?} from event {:?}",
                 attribute, event
             ));
@@ -533,7 +534,7 @@ fn evaluate_context_attribute(
                 .as_ref()
                 .ok_or(anyhow!("Entities needed"))?
                 .get(&entity_type)
-                .context(format!(
+                .with_context(|| format!(
                     "Cannot find entity type {:?} to evaluate expression {:?}",
                     entity_type, expr
                 ))?;
@@ -598,7 +599,7 @@ fn evaluate_attribute_key(
                     .context("Event should be provided to extract entities key")?
                     .entities
                     .get(&entity_type)
-                    .context(format!(
+                    .with_context(|| format!(
                         "Failed to extract entity type {:?} from {:?}",
                         entity_type, eval_context.entities
                     ))?;
@@ -780,7 +781,6 @@ pub fn eval_agg(
     context: &EvalContext,
     stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
 ) -> Result<Value> {
-    println!("eval agg {:?}", agg);
     let interval = agg
         .when
         .materialize_interval(

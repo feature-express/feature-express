@@ -85,8 +85,6 @@ macro_rules! partial_agg_2 {
                 self.state.1 = self.state.1 $op2add $statemap2(input);
             }
 
-
-
             fn merge(&self, other: &Self) -> Self {
                 Self {
                     state: (self.state.0 $op1add other.state.0, self.state.1 $op2add other.state.1)
