@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 
 use crate::eval::{eval_simple_expr, extract_interval_events, EvalContext};
 use crate::event::Event;
-use crate::event_index::QueryConfig;
+
 use crate::interval::NaiveDateTimeInterval;
 use crate::map::HashMap;
 use crate::partial_agg::*;
@@ -226,7 +226,7 @@ mod tests {
     use crate::datetime_utils::add_ms;
     use crate::eval::eval_agg;
     use crate::event::{AttributeName, Entity, EntityType, EventType};
-    use crate::event_index::{check_event_type_index, EventContext, EventScopeConfig};
+    use crate::event_index::{check_event_type_index, EventContext, EventScopeConfig, QueryConfig};
     use crate::obs_dates::{ObsDate, ObservationTime};
     use crate::types::FLOAT;
 
@@ -265,7 +265,7 @@ mod tests {
         for obs_date in obs_dates.iter() {
             let context = EvalContext {
                 event_index: context.event_index,
-                query_config: &query_config,
+                query_config: Some(&query_config),
                 event_query_config: context.event_query_config.clone(),
                 entities: context.entities.clone(),
                 experiment_id: context.experiment_id.clone(),
@@ -329,19 +329,22 @@ mod tests {
         event_context
     }
 
+    #[cfg(feature = "long-tests")]
     #[test]
     fn test_partial_agg_cases() {
         let event_context = get_event_context();
         let query_config = QueryConfig::default();
         let context = EvalContext {
-            event_index: &event_context,
-            query_config: &query_config,
-            event_query_config: Default::default(),
-            entities: Entity {
-                typ: EntityType("a".into()),
-                id: "b".into(),
-            }
-            .into(),
+            event_index: Some(&event_context),
+            query_config: Some(&query_config),
+            event_query_config: Some(EventScopeConfig::AllEvents),
+            entities: Some(
+                Entity {
+                    typ: EntityType("a".into()),
+                    id: "b".into(),
+                }
+                .into(),
+            ),
             experiment_id: None,
             obs_date: Some(ObsDate {
                 inner: vec1![

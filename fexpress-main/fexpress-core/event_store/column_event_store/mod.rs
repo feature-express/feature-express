@@ -4,24 +4,22 @@ pub mod evaluation;
 mod logical_plan;
 pub mod raw_column;
 
-use paste::paste;
 use std::collections::BTreeMap;
-use std::collections::Bound::{Included, Unbounded};
+
 use std::fmt::Debug;
-use std::hash::Hash;
 
 use anyhow::{anyhow, bail, Result};
-use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
+
 use vec1::{vec1, Vec1};
 
-use crate::event::{AttributeName, Event, EventType};
+use crate::event::{AttributeName, Event};
 use crate::event_store::column_event_store::encoded_column::{ColumnVecType, EncodedColumnVec};
 use crate::event_store::column_event_store::raw_column::{RawColumnVec, RawColumnVecGen};
 use crate::map::HashMap;
-use crate::sstring::SmallString;
-use crate::types::{Timestamp, FLOAT, INT};
+
+use crate::types::Timestamp;
 use crate::value::{Value, ValueType};
 
 // This represents the type including nullability (stored in the block)
@@ -229,7 +227,7 @@ impl ColumnData {
     pub fn push_none(&mut self) -> Result<()> {
         match self {
             ColumnData::Raw(raw) => raw.push_none()?,
-            ColumnData::Encoded(enc) => {
+            ColumnData::Encoded(_enc) => {
                 self.decode();
                 self.push_none()?;
             }
@@ -242,7 +240,7 @@ impl ColumnData {
             ColumnData::Raw(raw) => {
                 raw.push_value(value)?;
             }
-            ColumnData::Encoded(enc) => {
+            ColumnData::Encoded(_enc) => {
                 self.decode();
                 self.push_value(value)?;
             }
@@ -260,7 +258,7 @@ impl ColumnData {
                     false
                 }
             }
-            ColumnData::Encoded(enc) => true,
+            ColumnData::Encoded(_enc) => true,
         }
     }
 
@@ -305,7 +303,7 @@ impl Block {
     fn insert_new_event_incremental(
         &mut self,
         event: &Event,
-        settings: &Settings,
+        _settings: &Settings,
         table_schema: &mut HashMap<String, AnyColumnDataType>,
     ) -> Result<()> {
         self.end_time = event.event_time;
@@ -326,7 +324,7 @@ impl Block {
 
     fn insert_event_attributes(
         &mut self,
-        event: &Event,
+        _event: &Event,
         table_schema: &mut HashMap<String, AnyColumnDataType>,
         attribute_values: HashMap<AttributeName, Value>,
     ) -> Result<()> {
@@ -532,7 +530,7 @@ impl Table {
                 )
             } else {
                 // TODO: compress previous block
-                let mut last_block = inner_blocks.last_mut();
+                let last_block = inner_blocks.last_mut();
                 last_block.encode();
                 self.create_new_block_with_event(event, settings, event_timestamp)
             }
@@ -679,10 +677,11 @@ impl ColumnStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::event::EventType;
     use crate::event_store::column_event_store::encoded_column::NullableEncodedColumnVec;
     use crate::event_store::column_event_store::encoding::rle::RunLengthEncodedVecOptionGen;
     use crate::tests::fake_nba::generate_nba_game_events;
-    use chrono::Duration;
+    use chrono::{Duration, NaiveDateTime};
     use std::ops::Add;
 
     #[test]

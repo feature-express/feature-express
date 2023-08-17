@@ -1,9 +1,7 @@
-use std::hash::Hash;
-
 use crate::event_store::column_event_store::encoded_column::EncodedColumnVec;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use chrono::{NaiveDate, NaiveDateTime};
-use itertools::Itertools;
+
 use ordered_float::OrderedFloat;
 
 use crate::event_store::column_event_store::encoded_column::{
@@ -182,7 +180,7 @@ impl RawColumnVec {
                     Ok(encode_column!(nonnullable, NonNullable))
                 }
             },
-            RawColumnVec::Num(v) => todo!(),
+            RawColumnVec::Num(_v) => todo!(),
             RawColumnVec::Int(v) => match v {
                 RawColumnVecGen::Nullable(nullable) => Ok(encode_column!(nullable, Nullable)),
                 RawColumnVecGen::NonNullable(nonnullable) => {

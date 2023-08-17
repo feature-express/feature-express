@@ -5,8 +5,6 @@ use chrono::{NaiveDate, NaiveDateTime};
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::io::prelude::*;
-use std::io::Cursor;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LZ4CompressedVecGen<T: PartialEq> {
@@ -25,7 +23,7 @@ impl<T: PartialEq + Serialize + for<'de> Deserialize<'de>> LZ4CompressedVecGen<T
     }
 
     pub fn decode(self) -> Vec<T> {
-        let mut decompressed_data =
+        let decompressed_data =
             decompress_size_prepended(&self.compressed_data).expect("Cannot decompress data");
         bincode::deserialize(&decompressed_data).expect("Cannot deserialize data")
     }
@@ -120,7 +118,7 @@ impl<T: Serialize + for<'de> Deserialize<'de>> LZ4CompressedVecOptionGen<T> {
     }
 
     pub fn decode(self) -> Vec<Option<T>> {
-        let mut decompressed_data =
+        let decompressed_data =
             decompress_size_prepended(&self.compressed_data).expect("Cannot decompress data");
         bincode::deserialize(&decompressed_data).expect("Cannot deserialize data")
     }

@@ -1,22 +1,20 @@
-use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 
 use crate::map::HashSet;
 use crate::sstring::SmallString;
-use anyhow::{Context, Error};
+
 use chrono::{NaiveDate, NaiveDateTime};
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
-use pest::Parser;
+
 use strum::{EnumDiscriminants, EnumIter};
 
 use crate::event::{AttributeKey, EntityType};
 use crate::features::Feature;
 use crate::interval::NewInterval;
-use crate::parser::expr_parser::{generate_ast, ExprParser, Rule};
-use crate::types::{FLOAT, INT, UINT};
-use derivative::Derivative;
+
+use crate::types::{FLOAT, INT};
+
 use enum_as_inner::EnumAsInner;
 
 pub type BExpr = Box<Expr>;

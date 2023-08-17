@@ -5,7 +5,6 @@ use crate::sstring::SmallString;
 use chrono::NaiveDateTime;
 
 use crate::event::{EntityID, EntityType};
-use ordered_float::OrderedFloat;
 
 pub type Timestamp = NaiveDateTime;
 pub type EventID = SmallString;

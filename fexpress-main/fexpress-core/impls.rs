@@ -1,5 +1,3 @@
-use crate::sstring::SmallString;
-
 // impl JsonSchema for SmallString {
 //     no_ref_schema!();
 //

@@ -5,7 +5,7 @@ pub struct ColumnStoreEvalContext<'a> {
     pub store: &'a ColumnStore,
 }
 
-pub fn eval_agg(agg: AggrExpr, context: &ColumnStoreEvalContext) {}
+pub fn eval_agg(_agg: AggrExpr, _context: &ColumnStoreEvalContext) {}
 
 #[cfg(test)]
 mod tests {

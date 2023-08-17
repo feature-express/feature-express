@@ -20,9 +20,10 @@ use strum::IntoEnumIterator;
 
 use crate::event::AttributeKey;
 use crate::interval::{
-    Direction, DirectionOnly, FixedInterval, KeywordInterval, NewInterval, Unit,
+    BetweenDatesExpressions, Direction, DirectionOnly, FixedInterval, KeywordInterval, NewInterval,
+    Unit,
 };
-use crate::parser::expr_parser::Rule::or;
+
 use crate::types::{FLOAT, INT};
 use crate::value::ValueType;
 
@@ -176,6 +177,8 @@ pub fn build_term(pair: Pair<Rule>) -> Expr {
         Rule::wildcard => Expr::Wildcard,
         Rule::variable_assignment => parse_variable_assignment(pair.into_inner())
             .unwrap_or_else(|_| Expr::ParsingError("Cannot parse variable assignment".into())),
+        Rule::date_from_expr => generate_ast(pair.into_inner()),
+        Rule::date_to_expr => generate_ast(pair.into_inner()),
         pair => Expr::ParsingError(format!("Unexpected term rule: {:?}", pair)),
     }
 }
@@ -516,6 +519,20 @@ pub fn parse_interval(pair: Pair<Rule>) -> Result<NewInterval> {
             let v = pair.as_str().to_ascii_lowercase();
             NewInterval::KeywordDate(KeywordInterval::from_str(&v)?)
         }
+        Rule::between_dates => {
+            let date_from_expr =
+                extract_rule_from_pairs(pair.clone().into_inner(), Rule::date_from_expr)
+                    .context(format!("Cannot parse interval {:?}", pair))?;
+            let date_from_expr = build_term(date_from_expr);
+            let date_to_expr =
+                extract_rule_from_pairs(pair.clone().into_inner(), Rule::date_to_expr)
+                    .context(format!("Cannot parse interval {:?}", pair))?;
+            let date_to_expr = build_term(date_to_expr);
+            NewInterval::BetweenDatesExpressions(BetweenDatesExpressions {
+                from_date: Box::new(date_from_expr),
+                to_date: Box::new(date_to_expr),
+            })
+        }
         _ => unimplemented!(),
     };
     Ok(new_interval)
@@ -742,7 +759,7 @@ mod tests {
 
     use crate::eval::{eval_simple_expr, EvalContext};
     use crate::event::{Entity, Event, EventType};
-    use crate::event_index::EventContext;
+    use crate::event_index::{EventContext, EventScopeConfig, QueryConfig};
     use crate::features::Feature;
     use crate::obs_dates::ObsDate;
     use crate::parser::error_helper::friendly_pest_error;
@@ -1031,6 +1048,15 @@ mod tests {
     }
 
     #[test]
+    fn test_aggregate_with_between_dates() {
+        let successful_parse = ExprParser::parse(
+            Rule::single_expression,
+            "avg(pressure) over between date('2020-01-01') to date('2022-01-01') where pressure == 'static'",
+        );
+        let ast = generate_ast(successful_parse.unwrap());
+    }
+
+    #[test]
     fn test_aggregate_with_where() {
         let successful_parse = ExprParser::parse(
             Rule::single_expression,
@@ -1083,12 +1109,13 @@ mod tests {
         };
         let datetime = Utc::now().naive_utc().into();
         let mut event_context = EventContext::default();
+        let query_config = QueryConfig::default();
         event_context.new_event(event.clone());
         let context = EvalContext {
-            event_index: &event_context,
-            event_query_config: Default::default(),
-            query_config: &Default::default(),
-            entities: btreemap!["a".into() => "1".into()],
+            event_index: Some(&event_context),
+            event_query_config: Some(EventScopeConfig::AllEvents),
+            query_config: Some(&query_config),
+            entities: Some(btreemap!["a".into() => "1".into()]),
             experiment_id: None,
             obs_date: None,
             obs_time: Some(datetime),

@@ -3,7 +3,7 @@ use crate::ast::core::Expr;
 use crate::ast::traverse::traverse_expr;
 use crate::map::HashMap;
 use crate::sstring::SmallString;
-use anyhow::{anyhow, bail, Context, Error, Result};
+use anyhow::{Context, Error, Result};
 use itertools::Itertools;
 use pest::Parser;
 use std::convert::TryFrom;

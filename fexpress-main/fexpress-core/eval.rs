@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, bail, Context, Error, Result};
 use chrono::NaiveDateTime;
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
+
 use vec1::Vec1;
 
 use crate::aggr::eval_agg_using_partial_agg;
@@ -25,9 +25,7 @@ use crate::evaluation::text::{
     eval_starts_with, eval_substr, eval_trim, eval_upper,
 };
 use crate::event::{AttributeKey, AttributeName, EntityType, Event, EventType};
-use crate::event_index::{
-    check_agg_event_type_index, EventContext, EventScopeConfig, Query, QueryConfig,
-};
+use crate::event_index::{check_agg_event_type_index, EventContext, EventScopeConfig, QueryConfig};
 use crate::event_store::EventStore;
 use crate::interval::NaiveDateTimeInterval;
 use crate::map::HashMap;
@@ -38,11 +36,12 @@ use crate::stats::Stats;
 use crate::types::{Entities, Timestamp, FLOAT, INT};
 use crate::value::{Value, ValueType, ValueWithAlias, ValueWithTimestamp};
 
+#[derive(Default, Debug)]
 pub struct EvalContext<'a> {
-    pub event_index: &'a EventContext,
-    pub event_query_config: EventScopeConfig,
-    pub query_config: &'a QueryConfig,
-    pub entities: Entities,
+    pub event_index: Option<&'a EventContext>,
+    pub event_query_config: Option<EventScopeConfig>,
+    pub query_config: Option<&'a QueryConfig>,
+    pub entities: Option<Entities>,
     pub experiment_id: Option<SmallString>,
     pub obs_date: Option<ObsDate>,
     pub obs_time: Option<ObservationTime>,
@@ -127,7 +126,12 @@ fn eval_expr_many_obsdates(
         .inner
     {
         let event = if let Some(event_id) = &obs_date.event_id {
-            if let Some(event) = context.event_index.event_store.get_event_by_id(&event_id) {
+            if let Some(event) = context
+                .event_index
+                .ok_or(anyhow!("index needed"))?
+                .event_store
+                .get_event_by_id(&event_id)
+            {
                 Some(event)
             } else {
                 None
@@ -138,7 +142,7 @@ fn eval_expr_many_obsdates(
 
         let context = EvalContext {
             event_index: context.event_index,
-            query_config: &query_config,
+            query_config: Some(&query_config),
             event_query_config: context.event_query_config.clone(),
             entities: context.entities.clone(),
             experiment_id: context.experiment_id.clone(),
@@ -271,7 +275,11 @@ pub fn eval_simple_expr(
                 .datetime,
         )),
         Expr::EntityId(typ) => {
-            let entities_map = context_with_context?.entities.clone();
+            let entities_map = context_with_context?
+                .entities
+                .as_ref()
+                .ok_or(anyhow!("Entities needed"))?
+                .clone();
             Ok(Value::Str(
                 entities_map
                     .get(typ)
@@ -495,15 +503,13 @@ pub fn eval_simple_expr(
             v.iter().map(|v| SmallString::from(v).clone()).collect_vec(),
         )),
         Expr::ParsingError(e) => Err(anyhow!(e.clone())),
-        Expr::VariableAssign(variable_name, expression) => {
+        Expr::VariableAssign(_variable_name, expression) => {
             eval_simple_expr(expression, event, context, stored_variables)
         }
-        Expr::Select(select_expr) => todo!(),
-        Expr::Cons(lhs, rhs) => todo!(),
-        Expr::FullQuery(full_query) => panic!("Full queries are evaluated using a different path"),
+        Expr::Select(_select_expr) => todo!(),
+        Expr::Cons(_lhs, _rhs) => todo!(),
+        Expr::FullQuery(_full_query) => panic!("Full queries are evaluated using a different path"),
     };
-
-    // println!("expr {:?} value {:?}", expr, result);
     result
 }
 
@@ -522,10 +528,15 @@ fn evaluate_context_attribute(
         if first_element == "entities" {
             let entity_type = EntityType(second_element.clone());
             let eval_context = context.with_context(|| format!("Context needed to evaluate context attributes {:?} when evaluating expression {:?}", attribute.clone(), expr))?;
-            let entity_id = eval_context.entities.get(&entity_type).context(format!(
-                "Cannot find entity type {:?} to evaluate expression {:?}",
-                entity_type, expr
-            ))?;
+            let entity_id = eval_context
+                .entities
+                .as_ref()
+                .ok_or(anyhow!("Entities needed"))?
+                .get(&entity_type)
+                .context(format!(
+                    "Cannot find entity type {:?} to evaluate expression {:?}",
+                    entity_type, expr
+                ))?;
             return Ok(Value::Str(entity_id.0.clone()));
         }
     }
@@ -647,15 +658,15 @@ fn evaluate_untyped_attribute(
     //       from the where expression.
 
     let attribute_name = a!(attribute.to_kstring());
-    let value_types: Vec<ValueType> = context
-        .event_index
+    let event_index = context.event_index.ok_or(anyhow!("event index needed"))?;
+    let value_types: Vec<ValueType> = event_index
         .event_store
         .get_attribute_value_type(&attribute_name)
         .with_context(|| {
             format!(
                 "Cannot find attribute name {:} in the schema - available attributes are {:?}",
                 attribute,
-                context.event_index.event_store.get_schema()
+                event_index.event_store.get_schema()
             )
         })?
         .into_iter()
@@ -769,6 +780,7 @@ pub fn eval_agg(
     context: &EvalContext,
     stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
 ) -> Result<Value> {
+    println!("eval agg {:?}", agg);
     let interval = agg
         .when
         .materialize_interval(
@@ -787,7 +799,10 @@ pub fn eval_agg(
     }
 
     if let Some(interval_events) = interval_events {
-        let interval_events_concat = context.event_index.concat_events(interval_events);
+        let interval_events_concat = context
+            .event_index
+            .ok_or(anyhow!("event index needed"))?
+            .concat_events(interval_events);
         if agg.groupby.is_some() {
             eval_groupby_agg(agg, &interval_events_concat, context, stored_variables)
         } else if agg.having.is_some() {
@@ -961,36 +976,36 @@ pub fn extract_interval_events(
     context: &EvalContext,
     interval: &NaiveDateTimeInterval,
 ) -> Option<Vec<(NaiveDateTime, Vec<Arc<Event>>)>> {
-    match &context.event_query_config {
+    match &context.event_query_config.as_ref()? {
         EventScopeConfig::RelatedEntitiesEvents(selected_entities) => {
             let mut new_entities = BTreeMap::new();
-            context.entities.iter().for_each(|(k, v)| {
+            context.entities.as_ref()?.iter().for_each(|(k, v)| {
                 if selected_entities.contains(k) {
                     new_entities.insert(k.clone(), v.clone());
                 }
             });
             let event_type_index_name = check_agg_event_type_index(agg_expr);
             let interval_events: Option<Vec<_>> = match event_type_index_name {
-                Some(event_type) => context.event_index.event_store.query_entity_event_type(
-                    &context.entities,
+                Some(event_type) => context.event_index?.event_store.query_entity_event_type(
+                    context.entities.as_ref()?,
                     &EventType(from_string!(event_type)),
                     interval,
-                    context.query_config,
+                    context.query_config?,
                     &context.experiment_id,
                 ),
-                None => context.event_index.event_store.query_entity_interval(
-                    &context.entities,
+                None => context.event_index?.event_store.query_entity_interval(
+                    context.entities.as_ref()?,
                     interval,
-                    context.query_config,
+                    context.query_config?,
                     &context.experiment_id,
                 ),
             };
             interval_events
         }
         EventScopeConfig::AllEvents => context
-            .event_index
+            .event_index?
             .event_store
-            .query_interval(interval, context.query_config),
+            .query_interval(interval, context.query_config?),
     }
 }
 
@@ -1364,6 +1379,7 @@ mod tests {
     use std::str::FromStr;
 
     use chrono::{Duration, TimeZone, Utc};
+    use ordered_float::OrderedFloat;
 
     use crate::event::{AttributeName, Entity};
     use crate::event_index::EventContext;
@@ -1452,15 +1468,17 @@ mod tests {
         let event_query_config =
             EventScopeConfig::RelatedEntitiesEvents(vec![EntityType("1".into())]);
         let context = EvalContext {
-            entities: Entity {
-                typ: "1".into(),
-                id: "1".into(),
-            }
-            .into(),
-            query_config: &query_config,
+            entities: Some(
+                Entity {
+                    typ: "1".into(),
+                    id: "1".into(),
+                }
+                .into(),
+            ),
+            query_config: Some(&query_config),
             experiment_id: None,
             obs_date: None,
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_types: vec![],
             event: None,
             obs_time: Some(ObservationTime {
@@ -1468,7 +1486,7 @@ mod tests {
                 event_id: None,
             }),
             event_on_obs_date: None,
-            event_query_config,
+            event_query_config: Some(event_query_config),
         };
 
         let hm = HashMap::new();
@@ -1498,15 +1516,17 @@ mod tests {
         let datetime = Utc.ymd(2020, 1, 10).and_hms(0, 0, 0).naive_utc().into();
 
         let context = EvalContext {
-            entities: Entity {
-                typ: "".into(),
-                id: "1".into(),
-            }
-            .into(),
-            query_config: &query_config,
+            entities: Some(
+                Entity {
+                    typ: "".into(),
+                    id: "1".into(),
+                }
+                .into(),
+            ),
+            query_config: Some(&query_config),
             experiment_id: None,
             obs_date: None,
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_types: vec![],
             event: None,
             obs_time: Some(ObservationTime {
@@ -1514,14 +1534,14 @@ mod tests {
                 event_id: None,
             }),
             event_on_obs_date: None,
-            event_query_config: Default::default(),
+            event_query_config: Some(EventScopeConfig::AllEvents),
         };
 
         let hm = HashMap::new();
         let result = eval_simple_expr(&expr, None, Some(&context), &hm);
     }
 
-    fn get_event(v: FLOAT, c: String, p: FLOAT, o: bool) -> Event {
+    fn get_event(v: FLOAT, c: String, p: FLOAT, o: bool, entity_id: String) -> Event {
         Event {
             event_type: EventType("".into()),
             event_time: Utc
@@ -1529,7 +1549,7 @@ mod tests {
                 .and_hms(0, 0, 0)
                 .add(Duration::days(v as i64))
                 .naive_utc(),
-            entities: btreemap!["location".into() => "a".into()],
+            entities: btreemap!["location".into() => SmallString::from(entity_id).into()],
             attrs: Some(hashmap! {
                 a!("temp") => Value::Num(v),
                 a!("pressure") => Value::Num(p),
@@ -1544,12 +1564,12 @@ mod tests {
 
     fn get_events() -> Vec<Event> {
         vec![
-            get_event(1.0, "a".into(), 1.0, true),
-            get_event(2.0, "b".into(), 100.0, true),
-            get_event(3.0, "c".into(), 3.0, false),
-            get_event(4.0, "d".into(), 5.0, true),
-            get_event(5.0, "e".into(), 200.0, false),
-            get_event(6.0, "f".into(), -100.0, true),
+            get_event(1.0, "a".into(), 1.0, true, "a".into()),
+            get_event(2.0, "b".into(), 100.0, true, "a".into()),
+            get_event(3.0, "c".into(), 3.0, false, "a".into()),
+            get_event(4.0, "d".into(), 5.0, true, "a".into()),
+            get_event(5.0, "e".into(), 200.0, false, "a".into()),
+            get_event(6.0, "f".into(), -100.0, true, "a".into()),
         ]
     }
 
@@ -1562,21 +1582,23 @@ mod tests {
         event_context
     }
 
-    fn eval_expr(expr_str: String) -> Value {
+    fn eval_expr(expr_str: String, entity_id: String) -> Value {
         let event_context = get_event_context();
         let query_config = QueryConfig::default();
         let expr = Expr::from_str(&expr_str).unwrap();
         let datetime = Utc.ymd(2020, 1, 30).and_hms(0, 0, 0).naive_utc();
         let context = EvalContext {
-            entities: Entity {
-                typ: "location".into(),
-                id: "a".into(),
-            }
-            .into(),
-            query_config: &query_config,
+            entities: Some(
+                Entity {
+                    typ: "location".into(),
+                    id: entity_id.into(),
+                }
+                .into(),
+            ),
+            query_config: Some(&query_config),
             experiment_id: None,
             obs_date: None,
-            event_index: &event_context,
+            event_index: Some(&event_context),
             event_types: vec![],
             event: None,
             obs_time: Some(ObservationTime {
@@ -1584,7 +1606,7 @@ mod tests {
                 event_id: None,
             }),
             event_on_obs_date: None,
-            event_query_config: Default::default(),
+            event_query_config: Some(EventScopeConfig::AllEvents),
         };
         let hm = HashMap::new();
         eval_simple_expr(&expr, None, Some(&context), &hm).unwrap()
@@ -1592,145 +1614,168 @@ mod tests {
 
     #[test]
     fn test_agg_num() {
-        let result = eval_expr("count(type) over past".into());
+        let result = eval_expr("count(type) over past".into(), "a".into());
         assert_eq!(result, Value::Int(6));
     }
 
     #[test]
     fn test_in_str() {
-        let result = eval_expr("count(type) over past where type in ('a','b','c','d')".into());
+        let result = eval_expr(
+            "count(type) over past where type in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
-        let result = eval_expr("count(*) over past where type in ('a','b','c','d')".into());
+        let result = eval_expr(
+            "count(*) over past where type in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
     }
 
     #[test]
     fn test_not_in_str() {
-        let result = eval_expr("count(type) over past where type not in ('a','b','c','d')".into());
+        let result = eval_expr(
+            "count(type) over past where type not in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
-        let result = eval_expr("count(*) over past where type not in ('a','b','c','d')".into());
+        let result = eval_expr(
+            "count(*) over past where type not in ('a','b','c','d')".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
     }
 
     #[test]
     fn test_in_int() {
-        let result = eval_expr("count(type) over past where tempint in (1,2,3,4)".into());
+        let result = eval_expr(
+            "count(type) over past where tempint in (1,2,3,4)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
     }
 
     #[test]
     fn test_not_in_int() {
-        let result = eval_expr("count(type) over past where tempint not in (1,2,3,4)".into());
+        let result = eval_expr(
+            "count(type) over past where tempint not in (1,2,3,4)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
     }
 
     #[test]
     fn test_in_float() {
-        let result = eval_expr("count(type) over past where temp in (1.0,2.0,3.0, 4.0)".into());
+        let result = eval_expr(
+            "count(type) over past where temp in (1.0,2.0,3.0, 4.0)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(4));
     }
 
     #[test]
     fn test_not_in_float() {
-        let result =
-            eval_expr("count(type) over past where temp not in (1.0, 2.0 , 3.0, 4.0)".into());
+        let result = eval_expr(
+            "count(type) over past where temp not in (1.0, 2.0 , 3.0, 4.0)".into(),
+            "a".into(),
+        );
         assert_eq!(result, Value::Int(2));
     }
 
     #[test]
     fn test_last_nested() {
-        let result = eval_expr("last(dict.m) over past".into());
+        let result = eval_expr("last(dict.m) over past".into(), "a".into());
         assert_eq!(result, Value::Num(1.0));
     }
 
     #[test]
     fn test_last_nested_grouped() {
-        let result = eval_expr("count(type) over past group by dict.m".into());
+        let result = eval_expr("count(type) over past group by dict.m".into(), "a".into());
     }
 
     #[test]
     fn test_map_num() {
-        let result = eval_expr("last(dict) over past".into());
+        let result = eval_expr("last(dict) over past".into(), "a".into());
         assert_eq!(result, Value::MapNum(hashmap! {a!("m") => 1.0}));
     }
 
     #[test]
     fn test_agg_nth() {
-        let result = eval_expr("nth(temp, 0) over past".into());
+        let result = eval_expr("nth(temp, 0) over past".into(), "a".into());
         assert_eq!(result, Value::Num(1.0));
     }
 
     #[test]
     fn test_agg_nth_1() {
-        let result = eval_expr("nth(temp, 1) over past".into());
+        let result = eval_expr("nth(temp, 1) over past".into(), "a".into());
         assert_eq!(result, Value::Num(2.0));
     }
 
     #[test]
     fn test_agg_nth_m1() {
-        let result = eval_expr("nth(temp, -1) over past".into());
+        let result = eval_expr("nth(temp, -1) over past".into(), "a".into());
         assert_eq!(result, Value::Num(6.0));
     }
 
     #[test]
     fn test_agg_nth_m2() {
-        let result = eval_expr("nth(temp, -2) over past".into());
+        let result = eval_expr("nth(temp, -2) over past".into(), "a".into());
         assert_eq!(result, Value::Num(5.0));
     }
 
     #[test]
     fn test_agg_nth_wrong() {
-        let result = eval_expr("nth(temp, -7) over past".into());
+        let result = eval_expr("nth(temp, -7) over past".into(), "a".into());
         assert_eq!(result, Value::None);
     }
 
     #[test]
     fn test_agg_sum() {
-        let result = eval_expr("sum(temp) over past".into());
+        let result = eval_expr("sum(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(21.0));
     }
 
     #[test]
     fn test_agg_sum_untyped() {
-        let result = eval_expr("sum(temp) over past".into());
+        let result = eval_expr("sum(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(21.0));
     }
 
     #[test]
     fn test_agg_min() {
-        let result = eval_expr("min(temp) over past".into());
+        let result = eval_expr("min(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(1.0));
     }
 
     // TODO: I changed so that the attribute names are case sensitive
     // #[test]
     // fn test_attribute_case() {
-    //     let result1 = eval_expr("min(temp) over past".into());
-    //     let result2 = eval_expr("min(TEMP) over past".into());
+    //     let result1 = eval_expr("min(temp) over past".into(), "a".into());
+    //     let result2 = eval_expr("min(TEMP) over past".into(), "a".into());
     //     assert_eq!(result1, result2);
     // }
 
     #[test]
     fn test_agg_max() {
-        let result = eval_expr("max(temp) over past".into());
+        let result = eval_expr("max(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(6.0));
     }
 
     #[test]
     fn test_agg_max_str() {
-        let result = eval_expr("max(type) over past".into());
+        let result = eval_expr("max(type) over past".into(), "a".into());
         assert_eq!(result, Value::Str("f".into()));
     }
 
     #[test]
     fn test_agg_last_str() {
-        let result = eval_expr("last(type) over past".into());
+        let result = eval_expr("last(type) over past".into(), "a".into());
         assert_eq!(result, Value::Str("f".into()));
     }
 
     #[test]
     fn test_agg_min_dt() {
-        let result = eval_expr("min(event_time) over past".into());
+        let result = eval_expr("min(event_time) over past".into(), "a".into());
         assert_eq!(
             result,
             Value::DateTime(NaiveDateTime::from_str("2020-01-02T00:00:00").unwrap())
@@ -1739,7 +1784,7 @@ mod tests {
 
     #[test]
     fn test_agg_max_dt() {
-        let result = eval_expr("max(event_time) over past".into());
+        let result = eval_expr("max(event_time) over past".into(), "a".into());
         assert_eq!(
             result,
             Value::DateTime(NaiveDateTime::from_str("2020-01-07T00:00:00").unwrap())
@@ -1748,37 +1793,40 @@ mod tests {
 
     #[test]
     fn test_agg_median() {
-        let result = eval_expr("median(temp) over past".into());
+        let result = eval_expr("median(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(3.5));
     }
 
     #[test]
     fn test_agg_first() {
-        let result = eval_expr("first(temp) over past".into());
+        let result = eval_expr("first(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(1.0));
     }
 
     #[test]
     fn test_agg_last() {
-        let result = eval_expr("last(temp) over past".into());
+        let result = eval_expr("last(temp) over past".into(), "a".into());
         assert_eq!(result, Value::Num(6.0))
     }
 
     #[test]
     fn test_having_min() {
-        let result = eval_expr("first(type) over past having min temp".into());
+        let result = eval_expr("first(type) over past having min temp".into(), "a".into());
         assert_eq!(result, Value::Str("a".into()))
     }
 
     #[test]
     fn test_having_max_1() {
-        let result = eval_expr("first(type) over past having max temp".into());
+        let result = eval_expr("first(type) over past having max temp".into(), "a".into());
         assert_eq!(result, Value::Str("f".into()));
     }
 
     #[test]
     fn test_having_max_2() {
-        let result = eval_expr("first(event_time) over past having max pressure".into());
+        let result = eval_expr(
+            "first(event_time) over past having max pressure".into(),
+            "a".into(),
+        );
         assert_eq!(
             result,
             Value::DateTime(NaiveDateTime::from_str("2020-01-06T00:00:00").unwrap())
@@ -1786,8 +1834,23 @@ mod tests {
     }
 
     #[test]
+    fn test_having_max_2_over_between() {
+        let result = eval_expr(
+            "first(event_time) over between date('2020-01-01') to date('2020-01-05') having max pressure".into(),
+            "a".into(),
+        );
+        assert_eq!(
+            result,
+            Value::DateTime(NaiveDateTime::from_str("2020-01-03T00:00:00").unwrap())
+        );
+    }
+
+    #[test]
     fn test_having_max_event_time() {
-        let result = eval_expr("first(event_time) over past having max temp".into());
+        let result = eval_expr(
+            "first(event_time) over past having max temp".into(),
+            "a".into(),
+        );
         assert_eq!(
             result,
             Value::DateTime(NaiveDateTime::from_str("2020-01-07T00:00:00").unwrap())
@@ -1796,7 +1859,7 @@ mod tests {
 
     #[test]
     fn test_log() {
-        let result = eval_expr("ln(1)".into());
+        let result = eval_expr("ln(1)".into(), "a".into());
         assert_eq!(result, Value::Num(0.0));
     }
 
@@ -1810,25 +1873,25 @@ mod tests {
         ];
 
         for (input, expected) in tests {
-            let result = eval_expr(input.into());
+            let result = eval_expr(input.into(), "a".into());
             assert_eq!(result, expected);
         }
     }
 
     #[test]
     fn test_now() {
-        let result = eval_expr("now()".into());
+        let result = eval_expr("now()".into(), "a".into());
     }
 
     #[test]
     fn test_agg_values_numeric() {
-        let result = eval_expr("values(temp) over past".into());
+        let result = eval_expr("values(temp) over past".into(), "a".into());
         assert_eq!(result, Value::VecNum(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]));
     }
 
     #[test]
     fn test_agg_values_string() {
-        let result = eval_expr("values(type) over past".into());
+        let result = eval_expr("values(type) over past".into(), "a".into());
         assert_eq!(
             result,
             Value::VecStr(
@@ -1842,14 +1905,14 @@ mod tests {
 
     #[test]
     fn test_agg_values_bool() {
-        let result = eval_expr("values(is_overcast) over past".into());
+        let result = eval_expr("values(is_overcast) over past".into(), "a".into());
         assert_eq!(result, Value::VecNum(vec![1.0, 1.0, 0.0, 1.0, 0.0, 1.0]));
     }
 
     #[test]
     fn test_agg_time_of_first() {
         // Looking for the timestamp of the first event where `temp` > 0.
-        let result = eval_expr("time_of_first(temp > 0) over past".into());
+        let result = eval_expr("time_of_first(temp > 0) over past".into(), "a".into());
         // Assuming the first event in your `get_events` function is the first event where `temp` > 0.
         assert_eq!(
             result,
@@ -1860,7 +1923,7 @@ mod tests {
     #[test]
     fn test_agg_avg_time_between() {
         // Calculating the average time between events where `temp` > 0.
-        let result = eval_expr("avg_time_between(temp > 0) over past".into());
+        let result = eval_expr("avg_time_between(temp > 0) over past".into(), "a".into());
         // Assuming the events where `temp` > 0 are at times 1.0, 2.0, and 4.0, the average time between them should be 1.5.
         assert_eq!(result, Value::Num(1.0));
     }
@@ -1868,7 +1931,7 @@ mod tests {
     #[test]
     fn test_agg_time_of_first_temp_gt_3() {
         // Looking for the timestamp of the first event where `temp` > 3.
-        let result = eval_expr("time_of_first(temp > 3) over past".into());
+        let result = eval_expr("time_of_first(temp > 3) over past".into(), "a".into());
         // Assuming the first event where `temp` > 3 in your `get_events` function is the one with timestamp 4.0.
         assert_eq!(
             result,
@@ -1879,7 +1942,7 @@ mod tests {
     #[test]
     fn test_agg_avg_time_between_temp_gt_3() {
         // Calculating the average time between events where `temp` > 3.
-        let result = eval_expr("avg_time_between(temp > 3) over past".into());
+        let result = eval_expr("avg_time_between(temp > 3) over past".into(), "a".into());
         // Assuming the events where `temp` > 3 are at times 4.0, 5.0, and 6.0, the average time between them should be 1.0.
         assert_eq!(result, Value::Num(1.0));
     }
@@ -1944,6 +2007,21 @@ mod tests {
 
         // then
         assert_eq!(res, expected_res)
+    }
+
+    #[test]
+    fn test_eval_date_expr() {
+        let expr = Expr::from_str("date_add(date(obs_dt), 1)").unwrap();
+        let datetime = Utc.ymd(2020, 1, 30).and_hms(0, 0, 0).naive_utc();
+        let stored_variables = HashMap::new();
+        let context = EvalContext {
+            obs_time: Some(ObservationTime {
+                datetime,
+                event_id: None,
+            }),
+            ..Default::default()
+        };
+        let result = eval_simple_expr(&expr, None, Some(&context), &stored_variables);
     }
 
     #[test]

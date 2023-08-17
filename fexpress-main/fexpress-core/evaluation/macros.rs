@@ -1,5 +1,5 @@
 macro_rules! define_single_expr_eval_fn {
-    ($name:ident, $pattern:pat => $inner:ident, $func:expr, $func_name:expr) => {
+    ($name:ident, $func_name:expr, $( $arm:tt )*) => {
         pub fn $name(
             event: Option<&Event>,
             context: Option<&EvalContext>,
@@ -7,9 +7,8 @@ macro_rules! define_single_expr_eval_fn {
             expr: &BExpr,
         ) -> Result<Value> {
             let val = eval_simple_expr(expr, event, context, stored_variables)?;
-
             match val {
-                $pattern => $func($inner),
+                $( $arm )*,
                 _ => {
                     let val_type: ValueType = val.into();
                     let msg = format!(
@@ -24,7 +23,7 @@ macro_rules! define_single_expr_eval_fn {
 }
 
 macro_rules! define_double_expr_eval_fn {
-    ($name:ident, $pattern1:pat => $inner1:ident, $pattern2:pat => $inner2:ident, $func:expr, $func_name:expr) => {
+    ($name:ident, $func_name:expr, $( $arm:tt )*) => {
         pub fn $name(
             event: Option<&Event>,
             context: Option<&EvalContext>,
@@ -36,7 +35,7 @@ macro_rules! define_double_expr_eval_fn {
             let val2 = eval_simple_expr(expr2, event, context, stored_variables)?;
 
             match (&val1, &val2) {
-                ($pattern1, $pattern2) => $func($inner1, $inner2),
+                $( $arm )*,
                 _ => {
                     let val1_type: ValueType = val1.into();
                     let val2_type: ValueType = val2.into();

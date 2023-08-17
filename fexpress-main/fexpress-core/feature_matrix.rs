@@ -165,7 +165,7 @@ impl FeatureMatrix {
         let mut writer = Writer::from_path(path)?;
 
         let feature_mapping = self.feature_mapping();
-        let index_mapping = self.index_mapping();
+        let _index_mapping = self.index_mapping();
 
         // Write the header
         let header: Vec<String> = (0..feature_mapping.len())

@@ -1,16 +1,16 @@
 use pyo3::exceptions;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyString};
+use pyo3::types::{PyList, PyString};
 
-use fexpress_core::event::{AttributeName, Event};
+use fexpress_core::event::Event;
 use fexpress_core::event_index::{
     EventContext as EventContextR, EventScopeConfig, QueryConfig, RawQuery,
 };
 use fexpress_core::event_store::EventStore;
-use fexpress_core::map::HashMap;
+
 use fexpress_core::obs_dates::ObservationDatesConfig;
 use fexpress_core::sstring::SmallString;
-use fexpress_core::value::{Value, ValueType};
+use fexpress_core::value::Value;
 
 #[pyclass(unsendable)]
 pub struct EventContext {

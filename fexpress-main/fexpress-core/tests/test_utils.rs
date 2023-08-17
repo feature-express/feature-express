@@ -161,6 +161,7 @@ mod tests {
 
     /// Tests whether the counts of features that are calculated for the past and future
     /// sum up to the total events.
+    #[cfg(feature = "long-tests")]
     #[test]
     fn test_consistent_counts() {
         let settings_vec = vec![

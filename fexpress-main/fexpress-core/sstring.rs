@@ -4,7 +4,7 @@ pub use smol_str::SmolStr as SmallString;
 #[cfg(feature = "use_kstring")]
 pub use kstring::SmallString;
 
-#[cfg(all(not(feature = "use_smol_str"), not(feature = "use_kstring")))]
+#[cfg(feature = "use_std_string")]
 pub use std::string::String as SmallString;
 
 macro_rules! from_string {

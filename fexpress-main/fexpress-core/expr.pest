@@ -62,6 +62,7 @@ logical_op = _{ and | or }
 all_in_op = _{ in_op | not_in_op }
     in_op = { ^"in" }
     not_in_op = { ^"not in" }
+to = { ^"to" }
 neg = { "-" }
 binary_op = _{ comparison_op | math_op | logical_op }
 
@@ -70,8 +71,11 @@ direction = { ^"next" | ^"last" | ^"previous" | ^"future" | ^"past" }
 direction_only = { ^"future" | ^"past" }
 unit = { (^"millisecond" | ^"second" | ^"minute" | ^"hour" | ^"day" | ^"week") ~ ^"s"? }
 fixed_interval = { direction ~ integer ~ unit }
+date_from_expr = { scalar_expr }
+date_to_expr = { scalar_expr }
 keyword_interval = { ^"YTD" | ^"MTD" | ^"WTD" | ^"Yesterday" | ^"LastWeek" | ^"LastMonth" | ^"LastQuarter" | ^"LastYear" | ^"SameDayLastWeek" | ^"SameDayLastMonth" | ^"SameDayLastYear" | ^"Tomorrow" | ^"NextWeek" | ^"NextMonth" | ^"NextQuarter" | ^"NextYear" | ^"SameDayNextWeek" | ^"SameDayNextMonth" | ^"SameDayNextYear" | ^"NextWorkDay" | ^"PreviousWorkDay" }
-interval = { fixed_interval | direction_only | keyword_interval }
+between_dates = { ^"between" ~ date_from_expr ~ to ~ date_to_expr }
+interval = { between_dates | fixed_interval | direction_only | keyword_interval }
 
 // Aggregates
 aggfunc_name = @{ symbol }
@@ -112,6 +116,11 @@ binary_expr = { term ~ (binary_op ~ term )+ }
 term = _{ literal | "(" ~ binary_expr ~ ")" | "(" ~ aggfunc ~ ")" | aggfunc | func0 | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | in_expr | attr }
 in_term = _{ any_symbol }
 expr = _{ binary_expr | literal | "(" ~ aggfunc ~ ")" | aggfunc | func0 | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | in_expr | attr }
+
+// Simple scalar expressions (no aggregates)
+binary_scalar_expr = { scalar_term ~ (binary_op ~ scalar_term )+ }
+scalar_term = _{ literal | "(" ~ binary_scalar_expr ~ ")" | func0 | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | attr }
+scalar_expr = _{ binary_scalar_expr | literal | func0 | func1 | func2 | func3 | obs_dt | event_id | event_type | event_time | attr }
 
 // Aliasing
 alias = { ^"as" ~ alias_symbol }
