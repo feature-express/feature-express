@@ -26,6 +26,12 @@ python:
 python_debug:
 	cd fexpress-py && maturin develop
 
+python_debug_docker:
+	bash -c "cd /app/ && source .venv/bin/activate && cd fexpress-py && maturin develop"
+
+python_profile_docker:
+	bash -c "cd /app/ && source .venv/bin/activate && cd examples/kaggle_notebooks/weather && py-spy record --native -n -o /app/artifacts/profile.svg -- python feature-express-weather.py"
+
 python_publish:
 	cd fexpress-py && maturin publish
 
@@ -33,7 +39,7 @@ python_profile:
 	cd examples/kaggle_notebooks/weather && sudo py-spy record -n -o profile.svg -- python feature-express-weather.py
 
 website:
-	echo "Pulling the notebook from Kaggle"
+	echo "Pulling the notebcd ook from Kaggle"
 	cd examples/kaggle_notebooks/ && kaggle kernels pull paweljankiewicz/feature-express-weather -p weather
 	echo "Converting to markdown"
 	cd examples/kaggle_notebooks/weather/ && jupyter nbconvert --to markdown --execute feature-express-weather.ipynb

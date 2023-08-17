@@ -302,7 +302,7 @@ pub fn eval_simple_expr(
         | Expr::AttrDateTime(attribute) => {
             let event = event_with_context?;
 
-            let result = event.clone().extract_attribute(attribute).with_context(|| format!(
+            let result = event.extract_attribute(attribute).with_context(|| format!(
                 "Cannot extract attribute {:?} from event {:?}",
                 attribute, event
             ));
