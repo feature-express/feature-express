@@ -1,14 +1,15 @@
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
+use crate::types::FLOAT;
 
 pub struct Mean {
     count: usize,
-    sum: f64,
+    sum: FLOAT,
 }
 
 impl PartialAggregate for Mean {
-    type State = (usize, f64);
-    type Input = f64;
-    type Output = Option<f64>;
+    type State = (usize, FLOAT);
+    type Input = FLOAT;
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         Mean { count: 0, sum: 0.0 }
@@ -33,7 +34,7 @@ impl PartialAggregate for Mean {
         if self.count == 0 {
             None
         } else {
-            Some(self.sum / self.count as f64)
+            Some(self.sum / self.count as FLOAT)
         }
     }
 }
@@ -97,7 +98,7 @@ mod tests {
     fn test_mean_empty() {
         let mean = Mean::new();
 
-        let expected_result: Option<f64> = None;
+        let expected_result: Option<FLOAT> = None;
         let result = mean.evaluate();
 
         assert_eq!(result, expected_result);

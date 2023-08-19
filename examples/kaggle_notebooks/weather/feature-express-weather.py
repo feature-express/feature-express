@@ -105,3 +105,4 @@ features = event_context.query(
     ]
 )
 print(features.head())
+print(features.shape)

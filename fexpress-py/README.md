@@ -116,5 +116,7 @@ pip install target/wheels/fexpress_rs-0.1.0-cp38-cp38-linux_x86_64.whl -U
 
 Note that the file name can be different depending on your system.
 
+# Docker stuff
 
-
+docker build -t rust-python-maturin .
+docker run -rm -v $(pwd)/artifacts:/app/artifacts rust-python-maturin bash -c "make python_debug_docker && make python_profile_docker"

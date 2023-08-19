@@ -1,19 +1,20 @@
 extern crate chrono;
 
 use std::collections::VecDeque;
+use crate::types::FLOAT;
 
 use chrono::NaiveDateTime;
 
 // Nth implementation with a more efficient state
 pub struct Nth {
-    k_oldest_tuples: VecDeque<(NaiveDateTime, f64)>,
+    k_oldest_tuples: VecDeque<(NaiveDateTime, FLOAT)>,
     k: usize,
 }
 
 impl PartialAggregate for Nth {
-    type State = VecDeque<(NaiveDateTime, f64)>;
-    type Input = (NaiveDateTime, f64);
-    type Output = Option<f64>;
+    type State = VecDeque<(NaiveDateTime, FLOAT)>;
+    type Input = (NaiveDateTime, FLOAT);
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         Nth {

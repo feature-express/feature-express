@@ -1,14 +1,15 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 pub struct AbsoluteSumOfChanges {
-    state: f64,
-    prev_value: Option<f64>,
+    state: FLOAT,
+    prev_value: Option<FLOAT>,
 }
 
 impl PartialAggregate for AbsoluteSumOfChanges {
-    type State = f64;
-    type Input = f64;
-    type Output = f64;
+    type State = FLOAT;
+    type Input = FLOAT;
+    type Output = FLOAT;
 
     fn new() -> Self {
         AbsoluteSumOfChanges {

@@ -95,6 +95,7 @@ pub fn eval_context_dispatcher(
                 | AggregateFunction::Sum
                 | AggregateFunction::Avg
                 | AggregateFunction::StDev
+                | AggregateFunction::Min
                 | AggregateFunction::Var => {
                     // optimized version of
                     if agg_expr.having.is_none() && agg_expr.groupby.is_none() {

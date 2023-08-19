@@ -1,6 +1,7 @@
 use crate::ast::core::AggregateFunction;
 use crate::types::{FLOAT, INT};
 use crate::value::{nan_to_none, Value};
+use crate::partial_aggregates::minimum::Minimum;
 
 pub trait PartialAggregate {
     type State;
@@ -187,6 +188,7 @@ pub enum PartialAggregateWrapper {
     Avg(PartialAvg),
     Var(PartialVar),
     StdDev(PartialStdDev),
+    Minimum(Minimum)
 }
 
 #[rustfmt::skip]
@@ -196,7 +198,7 @@ impl PartialAggregateWrapper {
         match agg_func {
             AggregateFunction::Count => PartialAggregateWrapper::Count(PartialCount::new()),
             AggregateFunction::Sum => PartialAggregateWrapper::Sum(PartialSum::new()),
-            AggregateFunction::Min => unimplemented!(),
+            AggregateFunction::Min => PartialAggregateWrapper::Minimum(Minimum::new()),
             AggregateFunction::Max => unimplemented!(),
             AggregateFunction::Avg => PartialAggregateWrapper::Avg(PartialAvg::new()),
             AggregateFunction::Median => unimplemented!(),
@@ -220,7 +222,8 @@ impl PartialAggregateWrapper {
             PartialAggregateWrapper::Count(s) => s.update(value.into()),
             PartialAggregateWrapper::Avg(s) => s.update(value.into()),
             PartialAggregateWrapper::Var(s) => s.update(value.into()),
-            PartialAggregateWrapper::StdDev(s) => s.update(value.into())
+            PartialAggregateWrapper::StdDev(s) => s.update(value.into()),
+            PartialAggregateWrapper::Minimum(s) => s.update(value.into()),
         }
     }
 
@@ -243,7 +246,8 @@ impl PartialAggregateWrapper {
             PartialAggregateWrapper::Count(s) => Value::Int(s.evaluate() as INT),
             PartialAggregateWrapper::Avg(s) => Value::Num(s.evaluate()),
             PartialAggregateWrapper::Var(s) => if s.state.2 < 2 { Value::Num(0.0) } else { Value::Num(s.evaluate()) },
-            PartialAggregateWrapper::StdDev(s) => if s.state.2 < 2 { Value::Num(0.0) } else { Value::Num(s.evaluate()) }
+            PartialAggregateWrapper::StdDev(s) => if s.state.2 < 2 { Value::Num(0.0) } else { Value::Num(s.evaluate()) },
+            PartialAggregateWrapper::Minimum(s) => s.evaluate().map_or(Value::None, Value::Num),
         };
         nan_to_none(val)
     }
@@ -256,6 +260,7 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Avg(a), PartialAggregateWrapper::Avg(b)) => PartialAggregateWrapper::Avg(a.subtract(b)),
             (PartialAggregateWrapper::Var(a), PartialAggregateWrapper::Var(b)) => PartialAggregateWrapper::Var(a.subtract(b)),
             (PartialAggregateWrapper::StdDev(a), PartialAggregateWrapper::StdDev(b)) => PartialAggregateWrapper::StdDev(a.subtract(b)),
+            (PartialAggregateWrapper::Minimum(a), PartialAggregateWrapper::Minimum(b)) => PartialAggregateWrapper::Minimum(a.subtract(b)),
             _ => panic!("Cannot merge Partial aggregates of different types")
         }
     }
@@ -268,6 +273,7 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Avg(a), PartialAggregateWrapper::Avg(b)) => a.subtract_inplace(b),
             (PartialAggregateWrapper::Var(a), PartialAggregateWrapper::Var(b)) => a.subtract_inplace(b),
             (PartialAggregateWrapper::StdDev(a), PartialAggregateWrapper::StdDev(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::Minimum(a), PartialAggregateWrapper::Minimum(b)) => a.subtract_inplace(b),
             _ => ()
         }
     }

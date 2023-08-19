@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::types::FLOAT;
 
 use crate::partial_agg::PartialAggregate;
 
@@ -9,7 +10,7 @@ pub struct HasDuplicate {
 
 impl PartialAggregate for HasDuplicate {
     type State = HashMap<String, usize>;
-    type Input = f64;
+    type Input = FLOAT;
     type Output = bool;
 
     fn new() -> Self {

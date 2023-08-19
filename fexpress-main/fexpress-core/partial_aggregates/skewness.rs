@@ -1,16 +1,17 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 pub struct Skewness {
     count: usize,
-    mean: f64,
-    m2: f64,
-    m3: f64,
+    mean: FLOAT,
+    m2: FLOAT,
+    m3: FLOAT,
 }
 
 impl PartialAggregate for Skewness {
-    type State = (usize, f64, f64, f64);
-    type Input = f64;
-    type Output = f64;
+    type State = (usize, FLOAT, FLOAT, FLOAT);
+    type Input = FLOAT;
+    type Output = FLOAT;
 
     fn new() -> Self {
         Skewness {
@@ -22,12 +23,12 @@ impl PartialAggregate for Skewness {
     }
 
     fn update(&mut self, input: Self::Input) {
-        let count_f64 = self.count as f64;
+        let count_FLOAT = self.count as FLOAT;
         let delta = input - self.mean;
-        let delta_n = delta / (self.count + 1) as f64;
-        let term1 = delta * delta_n * count_f64;
+        let delta_n = delta / (self.count + 1) as FLOAT;
+        let term1 = delta * delta_n * count_FLOAT;
         self.mean += delta_n;
-        self.m3 += term1 * delta_n * (count_f64 - 1.0) - 3.0 * delta_n * self.m2;
+        self.m3 += term1 * delta_n * (count_FLOAT - 1.0) - 3.0 * delta_n * self.m2;
         self.m2 += term1;
         self.count += 1;
     }
@@ -37,17 +38,17 @@ impl PartialAggregate for Skewness {
         let delta = other.mean - self.mean;
         let delta2 = delta * delta;
         let delta3 = delta2 * delta;
-        let total_count_f64 = total_count as f64;
+        let total_count_FLOAT = total_count as FLOAT;
         let mean =
-            (self.mean * self.count as f64 + other.mean * other.count as f64) / total_count_f64;
+            (self.mean * self.count as FLOAT + other.mean * other.count as FLOAT) / total_count_FLOAT;
         let m2 =
-            self.m2 + other.m2 + delta2 * self.count as f64 * other.count as f64 / total_count_f64;
+            self.m2 + other.m2 + delta2 * self.count as FLOAT * other.count as FLOAT / total_count_FLOAT;
         let m3 = self.m3
             + other.m3
-            + delta3 * self.count as f64 * (self.count - 1) as f64 * other.count as f64
-                / (total_count_f64 * (total_count - 1) as f64)
-            - 3.0 * delta * (self.count as f64 * other.m2 - other.count as f64 * self.m2)
-                / total_count_f64;
+            + delta3 * self.count as FLOAT * (self.count - 1) as FLOAT * other.count as FLOAT
+                / (total_count_FLOAT * (total_count - 1) as FLOAT)
+            - 3.0 * delta * (self.count as FLOAT * other.m2 - other.count as FLOAT * self.m2)
+                / total_count_FLOAT;
 
         Skewness {
             count: total_count,
@@ -61,9 +62,9 @@ impl PartialAggregate for Skewness {
         if self.count < 3 {
             0.0
         } else {
-            let m2_sqrt = (self.m2 / self.count as f64).sqrt();
+            let m2_sqrt = (self.m2 / self.count as FLOAT).sqrt();
             if m2_sqrt > 1e-9 {
-                self.m3 / (self.count as f64 * m2_sqrt.powi(3))
+                self.m3 / (self.count as FLOAT * m2_sqrt.powi(3))
             } else {
                 0.0
             }

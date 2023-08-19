@@ -1,14 +1,15 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 pub struct RootMeanSquare {
     count: usize,
-    sum_of_squares: f64,
+    sum_of_squares: FLOAT,
 }
 
 impl PartialAggregate for RootMeanSquare {
-    type State = (usize, f64);
-    type Input = f64;
-    type Output = Option<f64>;
+    type State = (usize, FLOAT);
+    type Input = FLOAT;
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         RootMeanSquare {
@@ -33,7 +34,7 @@ impl PartialAggregate for RootMeanSquare {
         if self.count == 0 {
             None
         } else {
-            Some((self.sum_of_squares / self.count as f64).sqrt())
+            Some((self.sum_of_squares / self.count as FLOAT).sqrt())
         }
     }
 }
@@ -51,7 +52,7 @@ mod tests {
             rms.update(value);
         }
 
-        let expected_result = Some(((55.0 / 5.0) as f64).sqrt());
+        let expected_result = Some(((55.0 / 5.0) as FLOAT).sqrt());
         let result = rms.evaluate();
 
         assert_eq!(result, expected_result);
@@ -72,7 +73,7 @@ mod tests {
         }
 
         let rms_merged = rms1.merge(&rms2);
-        let expected_result = Some(((55.0 / 5.0) as f64).sqrt());
+        let expected_result = Some(((55.0 / 5.0) as FLOAT).sqrt());
         let result = rms_merged.evaluate();
 
         assert_eq!(result, expected_result);
@@ -82,7 +83,7 @@ mod tests {
     fn test_root_mean_square_empty() {
         let rms = RootMeanSquare::new();
 
-        let expected_result: Option<f64> = None;
+        let expected_result: Option<FLOAT> = None;
         let result = rms.evaluate();
 
         assert_eq!(result, expected_result);
