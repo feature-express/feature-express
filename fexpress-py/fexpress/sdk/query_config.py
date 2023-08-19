@@ -35,16 +35,20 @@ class QueryConfig:
     parallel: Optional[bool] = None
 
     @staticmethod
-    def from_dict(obj: Any) -> 'QueryConfig':
+    def from_dict(obj: Any) -> "QueryConfig":
         assert isinstance(obj, dict)
-        include_events_on_obs_date = from_union([from_bool, from_none], obj.get("include_events_on_obs_date"))
+        include_events_on_obs_date = from_union(
+            [from_bool, from_none], obj.get("include_events_on_obs_date")
+        )
         parallel = from_union([from_bool, from_none], obj.get("parallel"))
         return QueryConfig(include_events_on_obs_date, parallel)
 
     def to_dict(self) -> dict:
         result: dict = {}
         if self.include_events_on_obs_date is not None:
-            result["include_events_on_obs_date"] = from_union([from_bool, from_none], self.include_events_on_obs_date)
+            result["include_events_on_obs_date"] = from_union(
+                [from_bool, from_none], self.include_events_on_obs_date
+            )
         if self.parallel is not None:
             result["parallel"] = from_union([from_bool, from_none], self.parallel)
         return result

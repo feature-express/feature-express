@@ -1,7 +1,7 @@
-use std::collections::BTreeMap;
-use ordered_float::OrderedFloat;
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
 use crate::types::FLOAT;
+use ordered_float::OrderedFloat;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub struct Minimum {

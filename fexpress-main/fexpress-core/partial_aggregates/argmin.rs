@@ -1,15 +1,21 @@
-use std::collections::BTreeMap;
-use ordered_float::OrderedFloat;
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
 use crate::types::FLOAT;
+use ordered_float::OrderedFloat;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug)]
-pub struct ArgMin<T> where T: Ord + Clone {
+pub struct ArgMin<T>
+where
+    T: Ord + Clone,
+{
     count: usize,
     state: BTreeMap<OrderedFloat<FLOAT>, Vec<T>>, // value -> timestamps
 }
 
-impl<T> PartialAggregate for ArgMin<T> where T: Ord + Clone {
+impl<T> PartialAggregate for ArgMin<T>
+where
+    T: Ord + Clone,
+{
     type State = (usize, BTreeMap<OrderedFloat<FLOAT>, Vec<T>>);
     type Input = (T, FLOAT);
     type Output = Option<T>;
@@ -24,13 +30,19 @@ impl<T> PartialAggregate for ArgMin<T> where T: Ord + Clone {
     fn update(&mut self, input: Self::Input) {
         let (timestamp, value) = input;
         self.count += 1;
-        self.state.entry(OrderedFloat(value)).or_insert_with(Vec::new).push(timestamp);
+        self.state
+            .entry(OrderedFloat(value))
+            .or_insert_with(Vec::new)
+            .push(timestamp);
     }
 
     fn merge(&self, other: &Self) -> Self {
         let mut merged_state = self.state.clone();
         for (key, val) in other.state.iter() {
-            merged_state.entry(*key).or_insert_with(Vec::new).extend(val.clone());
+            merged_state
+                .entry(*key)
+                .or_insert_with(Vec::new)
+                .extend(val.clone());
         }
 
         ArgMin {
@@ -44,7 +56,11 @@ impl<T> PartialAggregate for ArgMin<T> where T: Ord + Clone {
     }
 }
 
-impl<T> SubtractPartialAggregate for ArgMin<T> where T: Ord, T: Clone {
+impl<T> SubtractPartialAggregate for ArgMin<T>
+where
+    T: Ord,
+    T: Clone,
+{
     fn subtract_inplace(&mut self, other: &Self) {
         for (key, val) in other.state.iter() {
             if let Some(current_vals) = self.state.get_mut(key) {

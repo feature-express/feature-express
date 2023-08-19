@@ -96,6 +96,9 @@ pub fn eval_context_dispatcher(
                 | AggregateFunction::Avg
                 | AggregateFunction::StDev
                 | AggregateFunction::Min
+                | AggregateFunction::Max
+                | AggregateFunction::First
+                | AggregateFunction::Last
                 | AggregateFunction::Var => {
                     // optimized version of
                     if agg_expr.having.is_none() && agg_expr.groupby.is_none() {
@@ -303,10 +306,12 @@ pub fn eval_simple_expr(
         | Expr::AttrDateTime(attribute) => {
             let event = event_with_context?;
 
-            let result = event.extract_attribute(attribute).with_context(|| format!(
-                "Cannot extract attribute {:?} from event {:?}",
-                attribute, event
-            ));
+            let result = event.extract_attribute(attribute).with_context(|| {
+                format!(
+                    "Cannot extract attribute {:?} from event {:?}",
+                    attribute, event
+                )
+            });
             match result {
                 Ok(v) => Ok(v),
                 // TODO: temporary solution must check if the attribute exists in the schema
@@ -535,10 +540,12 @@ fn evaluate_context_attribute(
                 .as_ref()
                 .ok_or(anyhow!("Entities needed"))?
                 .get(&entity_type)
-                .with_context(|| format!(
-                    "Cannot find entity type {:?} to evaluate expression {:?}",
-                    entity_type, expr
-                ))?;
+                .with_context(|| {
+                    format!(
+                        "Cannot find entity type {:?} to evaluate expression {:?}",
+                        entity_type, expr
+                    )
+                })?;
             return Ok(Value::Str(entity_id.0.clone()));
         }
     }
@@ -600,10 +607,12 @@ fn evaluate_attribute_key(
                     .context("Event should be provided to extract entities key")?
                     .entities
                     .get(&entity_type)
-                    .with_context(|| format!(
-                        "Failed to extract entity type {:?} from {:?}",
-                        entity_type, eval_context.entities
-                    ))?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to extract entity type {:?} from {:?}",
+                            entity_type, eval_context.entities
+                        )
+                    })?;
                 Ok(Value::Str(entity_id.0.clone()))
             } else {
                 Ok(evaluate_untyped_attribute(

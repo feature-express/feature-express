@@ -1,7 +1,12 @@
 use crate::ast::core::AggregateFunction;
+use crate::partial_aggregates::first::First;
+use crate::partial_aggregates::last::Last;
+use crate::partial_aggregates::maximum::Maximum;
+use crate::partial_aggregates::minimum::Minimum;
 use crate::types::{FLOAT, INT};
 use crate::value::{nan_to_none, Value};
-use crate::partial_aggregates::minimum::Minimum;
+use chrono::NaiveDateTime;
+use std::convert::identity;
 
 pub trait PartialAggregate {
     type State;
@@ -188,7 +193,10 @@ pub enum PartialAggregateWrapper {
     Avg(PartialAvg),
     Var(PartialVar),
     StdDev(PartialStdDev),
-    Minimum(Minimum)
+    Minimum(Minimum),
+    Maximum(Maximum),
+    First(First<NaiveDateTime, Value>),
+    Last(Last<NaiveDateTime, Value>),
 }
 
 #[rustfmt::skip]
@@ -199,14 +207,14 @@ impl PartialAggregateWrapper {
             AggregateFunction::Count => PartialAggregateWrapper::Count(PartialCount::new()),
             AggregateFunction::Sum => PartialAggregateWrapper::Sum(PartialSum::new()),
             AggregateFunction::Min => PartialAggregateWrapper::Minimum(Minimum::new()),
-            AggregateFunction::Max => unimplemented!(),
+            AggregateFunction::Max => PartialAggregateWrapper::Maximum(Maximum::new()),
             AggregateFunction::Avg => PartialAggregateWrapper::Avg(PartialAvg::new()),
             AggregateFunction::Median => unimplemented!(),
             AggregateFunction::Var => PartialAggregateWrapper::Var(PartialVar::new()),
             AggregateFunction::StDev => PartialAggregateWrapper::StdDev(PartialStdDev::new()),
-            AggregateFunction::Last => unimplemented!(),
+            AggregateFunction::Last => PartialAggregateWrapper::Last(Last::new()),
             AggregateFunction::Nth(_) => unimplemented!(),
-            AggregateFunction::First => unimplemented!(),
+            AggregateFunction::First => PartialAggregateWrapper::First(First::new()),
             AggregateFunction::TimeOfLast => unimplemented!(),
             AggregateFunction::TimeOfFirst => unimplemented!(),
             AggregateFunction::TimeOfNext => unimplemented!(),
@@ -215,7 +223,7 @@ impl PartialAggregateWrapper {
         }
     }
 
-    pub fn update(&mut self, value: Value) {
+    pub fn update(&mut self, value: Value, ts: NaiveDateTime) {
         match self {
             PartialAggregateWrapper::Sum(s) => s.update(value.into()),
             PartialAggregateWrapper::Product(s) => s.update(value.into()),
@@ -224,6 +232,9 @@ impl PartialAggregateWrapper {
             PartialAggregateWrapper::Var(s) => s.update(value.into()),
             PartialAggregateWrapper::StdDev(s) => s.update(value.into()),
             PartialAggregateWrapper::Minimum(s) => s.update(value.into()),
+            PartialAggregateWrapper::Maximum(s) => s.update(value.into()),
+            PartialAggregateWrapper::First(s) => s.update((ts, value.into())),
+            PartialAggregateWrapper::Last(s) => s.update((ts, value.into()))
         }
     }
 
@@ -235,6 +246,10 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Avg(a), PartialAggregateWrapper::Avg(b)) => PartialAggregateWrapper::Avg(a.merge(b)),
             (PartialAggregateWrapper::Var(a), PartialAggregateWrapper::Var(b)) => PartialAggregateWrapper::Var(a.merge(b)),
             (PartialAggregateWrapper::StdDev(a), PartialAggregateWrapper::StdDev(b)) => PartialAggregateWrapper::StdDev(a.merge(b)),
+            (PartialAggregateWrapper::Minimum(a), PartialAggregateWrapper::Minimum(b)) => PartialAggregateWrapper::Minimum(a.merge(b)),
+            (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => PartialAggregateWrapper::Maximum(a.merge(b)),
+            (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => PartialAggregateWrapper::First(a.merge(b)),
+            (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => PartialAggregateWrapper::Last(a.merge(b)),
             _ => panic!("Cannot merge Partial aggregates of different types")
         }
     }
@@ -248,6 +263,9 @@ impl PartialAggregateWrapper {
             PartialAggregateWrapper::Var(s) => if s.state.2 < 2 { Value::Num(0.0) } else { Value::Num(s.evaluate()) },
             PartialAggregateWrapper::StdDev(s) => if s.state.2 < 2 { Value::Num(0.0) } else { Value::Num(s.evaluate()) },
             PartialAggregateWrapper::Minimum(s) => s.evaluate().map_or(Value::None, Value::Num),
+            PartialAggregateWrapper::Maximum(s) => s.evaluate().map_or(Value::None, Value::Num),
+            PartialAggregateWrapper::First(s) => s.evaluate().map_or(Value::None, identity),
+            PartialAggregateWrapper::Last(s) => s.evaluate().map_or(Value::None, identity)
         };
         nan_to_none(val)
     }
@@ -261,6 +279,9 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Var(a), PartialAggregateWrapper::Var(b)) => PartialAggregateWrapper::Var(a.subtract(b)),
             (PartialAggregateWrapper::StdDev(a), PartialAggregateWrapper::StdDev(b)) => PartialAggregateWrapper::StdDev(a.subtract(b)),
             (PartialAggregateWrapper::Minimum(a), PartialAggregateWrapper::Minimum(b)) => PartialAggregateWrapper::Minimum(a.subtract(b)),
+            (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => PartialAggregateWrapper::Maximum(a.subtract(b)),
+            (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => PartialAggregateWrapper::First(a.subtract(b)),
+            (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => PartialAggregateWrapper::Last(a.subtract(b)),
             _ => panic!("Cannot merge Partial aggregates of different types")
         }
     }
@@ -274,6 +295,9 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Var(a), PartialAggregateWrapper::Var(b)) => a.subtract_inplace(b),
             (PartialAggregateWrapper::StdDev(a), PartialAggregateWrapper::StdDev(b)) => a.subtract_inplace(b),
             (PartialAggregateWrapper::Minimum(a), PartialAggregateWrapper::Minimum(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => a.subtract_inplace(b),
             _ => ()
         }
     }

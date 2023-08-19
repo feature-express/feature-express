@@ -1,17 +1,24 @@
-use std::collections::BTreeMap;
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
-use crate::types::FLOAT;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
-pub struct First<T> where T: Ord, T: Clone {
+pub struct First<T, V>
+where
+    T: Ord + Clone,
+    V: Clone,
+{
     count: usize,
-    state: BTreeMap<T, Vec<FLOAT>>, // timestamp -> values
+    state: BTreeMap<T, Vec<V>>, // timestamp -> values
 }
 
-impl<T> PartialAggregate for First<T> where T: Ord + Clone {
-    type State = (usize, BTreeMap<T, Vec<FLOAT>>);
-    type Input = (T, FLOAT);
-    type Output = Option<FLOAT>;
+impl<T, V> PartialAggregate for First<T, V>
+where
+    T: Ord + Clone,
+    V: Clone,
+{
+    type State = (usize, BTreeMap<T, Vec<V>>);
+    type Input = (T, V);
+    type Output = Option<V>;
 
     fn new() -> Self {
         First {
@@ -23,13 +30,19 @@ impl<T> PartialAggregate for First<T> where T: Ord + Clone {
     fn update(&mut self, input: Self::Input) {
         let (timestamp, value) = input;
         self.count += 1;
-        self.state.entry(timestamp).or_insert_with(Vec::new).push(value);
+        self.state
+            .entry(timestamp)
+            .or_insert_with(Vec::new)
+            .push(value);
     }
 
     fn merge(&self, other: &Self) -> Self {
         let mut merged_state = self.state.clone();
         for (key, val) in other.state.iter() {
-            merged_state.entry(key.clone()).or_insert_with(Vec::new).extend(val.clone());
+            merged_state
+                .entry(key.clone())
+                .or_insert_with(Vec::new)
+                .extend(val.clone());
         }
 
         First {
@@ -43,12 +56,16 @@ impl<T> PartialAggregate for First<T> where T: Ord + Clone {
     }
 }
 
-impl<T> SubtractPartialAggregate for First<T> where T: Ord, T: Clone {
+impl<T, V> SubtractPartialAggregate for First<T, V>
+where
+    T: Ord + Clone,
+    V: Clone + PartialEq,
+{
     fn subtract_inplace(&mut self, other: &Self) {
         for (key, val) in other.state.iter() {
             if let Some(current_vals) = self.state.get_mut(key) {
                 for v in val.iter() {
-                    if let Some(pos) = current_vals.iter().position(|&x| x == *v) {
+                    if let Some(pos) = current_vals.iter().position(|x| x == v) {
                         current_vals.remove(pos);
                     }
                 }
