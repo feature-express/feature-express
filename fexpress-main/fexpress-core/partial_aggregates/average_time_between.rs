@@ -1,6 +1,7 @@
 extern crate chrono;
 
 use chrono::{Duration, NaiveDateTime};
+use crate::types::FLOAT;
 
 // AverageTimeBetween implementation
 pub struct AverageTimeBetween {
@@ -12,7 +13,7 @@ pub struct AverageTimeBetween {
 
 impl PartialAggregate for AverageTimeBetween {
     type State = (Option<NaiveDateTime>, Option<NaiveDateTime>, Duration, usize);
-    type Input = (NaiveDateTime, f64);
+    type Input = (NaiveDateTime, FLOAT);
     type Output = Option<Duration>;
 
     fn new() -> Self {

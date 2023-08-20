@@ -29,6 +29,8 @@ use crate::event_index::{check_agg_event_type_index, EventContext, EventScopeCon
 use crate::event_store::EventStore;
 use crate::interval::NaiveDateTimeInterval;
 use crate::map::HashMap;
+use crate::naive_aggregate_funcs;
+use crate::naive_aggregate_funcs::max_consecutive_true;
 use crate::obs_dates::{ObsDate, ObservationTime};
 use crate::parser::expr_parser::parse_untyped_attr;
 use crate::sstring::SmallString;
@@ -95,6 +97,10 @@ pub fn eval_context_dispatcher(
                 | AggregateFunction::Sum
                 | AggregateFunction::Avg
                 | AggregateFunction::StDev
+                | AggregateFunction::Min
+                | AggregateFunction::Max
+                | AggregateFunction::First
+                | AggregateFunction::Last
                 | AggregateFunction::Var => {
                     // optimized version of
                     if agg_expr.having.is_none() && agg_expr.groupby.is_none() {
@@ -302,10 +308,12 @@ pub fn eval_simple_expr(
         | Expr::AttrDateTime(attribute) => {
             let event = event_with_context?;
 
-            let result = event.extract_attribute(attribute).with_context(|| format!(
-                "Cannot extract attribute {:?} from event {:?}",
-                attribute, event
-            ));
+            let result = event.extract_attribute(attribute).with_context(|| {
+                format!(
+                    "Cannot extract attribute {:?} from event {:?}",
+                    attribute, event
+                )
+            });
             match result {
                 Ok(v) => Ok(v),
                 // TODO: temporary solution must check if the attribute exists in the schema
@@ -534,10 +542,12 @@ fn evaluate_context_attribute(
                 .as_ref()
                 .ok_or(anyhow!("Entities needed"))?
                 .get(&entity_type)
-                .with_context(|| format!(
-                    "Cannot find entity type {:?} to evaluate expression {:?}",
-                    entity_type, expr
-                ))?;
+                .with_context(|| {
+                    format!(
+                        "Cannot find entity type {:?} to evaluate expression {:?}",
+                        entity_type, expr
+                    )
+                })?;
             return Ok(Value::Str(entity_id.0.clone()));
         }
     }
@@ -599,10 +609,12 @@ fn evaluate_attribute_key(
                     .context("Event should be provided to extract entities key")?
                     .entities
                     .get(&entity_type)
-                    .with_context(|| format!(
-                        "Failed to extract entity type {:?} from {:?}",
-                        entity_type, eval_context.entities
-                    ))?;
+                    .with_context(|| {
+                        format!(
+                            "Failed to extract entity type {:?} from {:?}",
+                            entity_type, eval_context.entities
+                        )
+                    })?;
                 Ok(Value::Str(entity_id.0.clone()))
             } else {
                 Ok(evaluate_untyped_attribute(
@@ -1033,180 +1045,32 @@ fn calc_agg(
     stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
 ) -> Result<Value> {
     match func {
-        AggregateFunction::Count => Ok(Value::Int(event_expr_vec.len() as INT)),
-        AggregateFunction::Sum => {
-            let v = extract_num_vector(event_expr_vec);
-            if !v.is_empty() {
-                Ok(Value::Num(v.sum() as FLOAT))
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::Min => {
-            if !event_expr_vec.is_empty() {
-                calc_mixed_agg(
-                    event_expr_vec,
-                    |v| Ok(v.min()),
-                    |v| Ok(v.iter().min().context("Cannot extract minimum")?.clone()),
-                    |v| Ok(*v.iter().min().context("Cannot extract minimum")?),
-                )
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::Max => {
-            if !event_expr_vec.is_empty() {
-                calc_mixed_agg(
-                    event_expr_vec,
-                    |v| Ok(v.max()),
-                    |v| Ok(v.iter().max().context("Cannot extract maximum")?.clone()),
-                    |v| Ok(*v.iter().max().context("Cannot extract maximum")?),
-                )
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::Avg => {
-            let v = extract_num_vector(event_expr_vec);
-            if !v.is_empty() {
-                Ok(Value::Num(v.mean() as FLOAT))
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::Median => {
-            let v = extract_num_vector(event_expr_vec);
-            if !v.is_empty() {
-                Ok(Value::Num(v.median() as FLOAT))
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::Var => {
-            let v = extract_num_vector(event_expr_vec);
-            if !v.is_empty() {
-                Ok(Value::Num(v.var() as FLOAT))
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::StDev => {
-            let v = extract_num_vector(event_expr_vec);
-            if !v.is_empty() {
-                Ok(Value::Num(v.std_dev() as FLOAT))
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::Last => {
-            let v = event_expr_vec.last();
-            if let Some(v) = v {
-                Ok(v.value.clone())
-            } else {
-                Ok(Value::None)
-            }
-        }
+        AggregateFunction::Count => naive_aggregate_funcs::count(&event_expr_vec),
+        AggregateFunction::Sum => naive_aggregate_funcs::sum(&event_expr_vec),
+        AggregateFunction::Min => naive_aggregate_funcs::min(&event_expr_vec),
+        AggregateFunction::Max => naive_aggregate_funcs::max(&event_expr_vec),
+        AggregateFunction::Avg => naive_aggregate_funcs::mean(&event_expr_vec),
+        AggregateFunction::Median => naive_aggregate_funcs::median(&event_expr_vec),
+        AggregateFunction::Var => naive_aggregate_funcs::var(&event_expr_vec),
+        AggregateFunction::StDev => naive_aggregate_funcs::stdev(&event_expr_vec),
+        AggregateFunction::Last => naive_aggregate_funcs::last(&event_expr_vec),
         AggregateFunction::Nth(n_expr) => {
-            let n_value = eval_simple_expr(n_expr, None, None, stored_variables)
-                .context("Cannot parse nth expression argument")?;
-            let n_opt: Option<INT> = n_value.into();
-            if let Some(n) = n_opt {
-                let v = if n >= 0 {
-                    event_expr_vec.get(n as usize)
-                } else {
-                    let vec_len = event_expr_vec.len();
-                    let n_end = (-n as usize) + 1_usize;
-                    if (-n) as usize >= vec_len {
-                        None
-                    } else {
-                        event_expr_vec.get(vec_len - n_end + 1)
-                    }
-                };
-                if let Some(v) = v {
-                    Ok(v.value.clone())
-                } else {
-                    Ok(Value::None)
-                }
-            } else {
-                bail!("Cannot evaluate nth n_expr {:?} as integer", n_expr);
-            }
+            naive_aggregate_funcs::nth(&event_expr_vec, stored_variables, n_expr)
         }
-        AggregateFunction::First => {
-            let v = event_expr_vec.first();
-            if let Some(v) = v {
-                Ok(v.value.clone())
-            } else {
-                Ok(Value::None)
-            }
-        }
-        AggregateFunction::TimeOfLast => {
-            for el in event_expr_vec.iter().rev() {
-                if let (Value::Bool(v), ts) = (el.clone().value, el.ts) {
-                    if v {
-                        return Ok(Value::DateTime(ts));
-                    }
-                }
-            }
-            Ok(Value::None)
-        }
-        AggregateFunction::TimeOfFirst => {
-            for el in event_expr_vec {
-                if let (Value::Bool(v), ts) = (el.value, el.ts) {
-                    if v {
-                        return Ok(Value::DateTime(ts));
-                    }
-                }
-            }
-            Ok(Value::None)
-        }
-        AggregateFunction::TimeOfNext => {
-            for el in event_expr_vec {
-                if let (Value::Bool(v), ts) = (el.value, el.ts) {
-                    if v {
-                        return Ok(Value::DateTime(ts));
-                    }
-                }
-            }
-            Ok(Value::None)
-        }
+        AggregateFunction::First => naive_aggregate_funcs::first(&event_expr_vec),
+        AggregateFunction::TimeOfLast => naive_aggregate_funcs::time_of_last(&event_expr_vec),
+        AggregateFunction::TimeOfFirst => naive_aggregate_funcs::time_of_first(&event_expr_vec),
+        AggregateFunction::TimeOfNext => naive_aggregate_funcs::time_of_next(&event_expr_vec),
         AggregateFunction::AvgDaysBetween => {
-            if event_expr_vec.len() < 2 {
-                return Ok(Value::None);
-            }
-            let mut timestamps: Vec<_> = event_expr_vec
-                .iter()
-                .filter_map(|el| match el.value {
-                    Value::Bool(v) => {
-                        if v {
-                            Some(el.ts)
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None,
-                })
-                .collect();
-            timestamps.sort();
-            let diffs: Vec<_> = timestamps.windows(2).map(|w| w[1] - w[0]).collect();
-            let sum: i64 = diffs.iter().map(|duration| duration.num_days()).sum();
-            let avg = sum as FLOAT / diffs.len() as FLOAT;
-            Ok(Value::Num(avg))
+            naive_aggregate_funcs::avg_days_between(&event_expr_vec)
         }
-        AggregateFunction::Values => {
-            let vec_type = classify_expr_result_vector(&event_expr_vec);
-            match vec_type {
-                ValueVectorType::SingleType(_type) => match _type {
-                    ValueType::Int | ValueType::Num | ValueType::Bool => {
-                        Ok(Value::VecNum(extract_num_vector(event_expr_vec)))
-                    }
-                    ValueType::Str | ValueType::Date | ValueType::DateTime => {
-                        Ok(Value::VecStr(extract_str_vector(event_expr_vec)))
-                    }
-                    _ => Err(anyhow!("Unhandled value type")),
-                },
-                _ => Ok(Value::None),
-            }
-        }
+        AggregateFunction::Values => naive_aggregate_funcs::values(&event_expr_vec),
+        AggregateFunction::ArgMax => naive_aggregate_funcs::argmax(&event_expr_vec),
+        AggregateFunction::ArgMin => naive_aggregate_funcs::argmin(&event_expr_vec),
+        AggregateFunction::Mode => naive_aggregate_funcs::mode(&event_expr_vec),
+        AggregateFunction::Any => naive_aggregate_funcs::any(&event_expr_vec),
+        AggregateFunction::All => naive_aggregate_funcs::all(&event_expr_vec),
+        AggregateFunction::MaxConsecutiveTrue => max_consecutive_true(&event_expr_vec),
     }
 }
 
@@ -1217,7 +1081,7 @@ pub enum ValueVectorType {
     SingleType(ValueType),
 }
 
-pub fn extract_num_vector(event_expr_vec: Vec<ValueWithTimestamp>) -> Vec<FLOAT> {
+pub fn extract_num_vector(event_expr_vec: &Vec<ValueWithTimestamp>) -> Vec<FLOAT> {
     event_expr_vec
         .iter()
         .map(|v| extract_inner_value(&(v.value)))
@@ -1246,7 +1110,7 @@ fn extract_inner_value(x: &Value) -> FLOAT {
     }
 }
 
-pub fn extract_str_vector(event_expr_vec: Vec<ValueWithTimestamp>) -> Vec<SmallString> {
+pub fn extract_str_vector(event_expr_vec: &Vec<ValueWithTimestamp>) -> Vec<SmallString> {
     event_expr_vec
         .iter()
         .filter_map(|x| match &x.value {
@@ -1258,7 +1122,7 @@ pub fn extract_str_vector(event_expr_vec: Vec<ValueWithTimestamp>) -> Vec<SmallS
         .collect()
 }
 
-pub fn extract_dt_vector(event_expr_vec: Vec<ValueWithTimestamp>) -> Vec<NaiveDateTime> {
+pub fn extract_dt_vector(event_expr_vec: &Vec<ValueWithTimestamp>) -> Vec<NaiveDateTime> {
     event_expr_vec
         .iter()
         .filter_map(|x| match &x.value {
@@ -1294,8 +1158,8 @@ pub fn classify_expr_result_vector(v: &[ValueWithTimestamp]) -> ValueVectorType 
 /// one type. First we need to classify whether the vector has results of the same type
 /// and classify it. Aggregation is only possible if the results are of a single type excluding
 /// None.
-fn calc_mixed_agg(
-    event_expr_vec: Vec<ValueWithTimestamp>,
+pub fn calc_mixed_agg(
+    event_expr_vec: &Vec<ValueWithTimestamp>,
     num_agg: fn(Vec<FLOAT>) -> Result<FLOAT>,
     str_agg: fn(Vec<SmallString>) -> Result<SmallString>,
     dt_agg: fn(Vec<NaiveDateTime>) -> Result<NaiveDateTime>,
@@ -1381,7 +1245,7 @@ mod tests {
     use chrono::{Duration, TimeZone, Utc};
     use ordered_float::OrderedFloat;
 
-    use crate::event::{AttributeName, Entity};
+    use crate::event::Entity;
     use crate::event_index::EventContext;
     use crate::event_index::QueryConfig;
 

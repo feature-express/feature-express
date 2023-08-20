@@ -1,14 +1,15 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 #[derive(Clone)]
 pub struct HasDuplicateMax {
-    max_value: Option<f64>,
+    max_value: Option<FLOAT>,
     max_count: usize,
 }
 
 impl PartialAggregate for HasDuplicateMax {
-    type State = (Option<f64>, usize);
-    type Input = f64;
+    type State = (Option<FLOAT>, usize);
+    type Input = FLOAT;
     type Output = bool;
 
     fn new() -> Self {

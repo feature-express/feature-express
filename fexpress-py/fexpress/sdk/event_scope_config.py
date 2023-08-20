@@ -41,14 +41,16 @@ class EventScopeConfigClass:
     related_entities_events: List[str]
 
     @staticmethod
-    def from_dict(obj: Any) -> 'EventScopeConfigClass':
+    def from_dict(obj: Any) -> "EventScopeConfigClass":
         assert isinstance(obj, dict)
         related_entities_events = from_list(from_str, obj.get("RelatedEntitiesEvents"))
         return EventScopeConfigClass(related_entities_events)
 
     def to_dict(self) -> dict:
         result: dict = {}
-        result["RelatedEntitiesEvents"] = from_list(from_str, self.related_entities_events)
+        result["RelatedEntitiesEvents"] = from_list(
+            from_str, self.related_entities_events
+        )
         return result
 
 
@@ -56,9 +58,19 @@ class EventScopeConfigEnum(Enum):
     ALL_EVENTS = "AllEvents"
 
 
-def event_scope_config_from_dict(s: Any) -> Union[EventScopeConfigClass, EventScopeConfigEnum]:
+def event_scope_config_from_dict(
+    s: Any,
+) -> Union[EventScopeConfigClass, EventScopeConfigEnum]:
     return from_union([EventScopeConfigClass.from_dict, EventScopeConfigEnum], s)
 
 
-def event_scope_config_to_dict(x: Union[EventScopeConfigClass, EventScopeConfigEnum]) -> Any:
-    return from_union([lambda x: to_class(EventScopeConfigClass, x), lambda x: to_enum(EventScopeConfigEnum, x)], x)
+def event_scope_config_to_dict(
+    x: Union[EventScopeConfigClass, EventScopeConfigEnum]
+) -> Any:
+    return from_union(
+        [
+            lambda x: to_class(EventScopeConfigClass, x),
+            lambda x: to_enum(EventScopeConfigEnum, x),
+        ],
+        x,
+    )

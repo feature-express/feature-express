@@ -1,5 +1,6 @@
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
 use crate::value::Value;
+use crate::types::FLOAT;
 
 pub struct Count {
     count: usize,

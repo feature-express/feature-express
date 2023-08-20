@@ -1,14 +1,15 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 pub struct Sum {
-    sum: f64,
+    sum: FLOAT,
     count: usize,
 }
 
 impl PartialAggregate for Sum {
-    type State = (f64, usize);
-    type Input = f64;
-    type Output = Option<f64>;
+    type State = (FLOAT, usize);
+    type Input = FLOAT;
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         Sum { sum: 0.0, count: 0 }
@@ -79,7 +80,7 @@ mod tests {
     fn test_sum_empty() {
         let sum = Sum::new();
 
-        let expected_result: Option<f64> = None;
+        let expected_result: Option<FLOAT> = None;
         let result = sum.evaluate();
 
         assert_eq!(result, expected_result);

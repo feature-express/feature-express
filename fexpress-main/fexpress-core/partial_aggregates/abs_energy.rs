@@ -1,14 +1,15 @@
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
+use crate::types::FLOAT;
 
 pub struct AbsEnergy {
     count: usize,
-    state: f64,
+    state: FLOAT,
 }
 
 impl PartialAggregate for AbsEnergy {
-    type State = (usize, f64);
-    type Input = f64;
-    type Output = Option<f64>;
+    type State = (usize, FLOAT);
+    type Input = FLOAT;
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         AbsEnergy {

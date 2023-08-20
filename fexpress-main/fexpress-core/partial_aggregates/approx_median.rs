@@ -1,10 +1,11 @@
 extern crate chrono;
+use crate::types::FLOAT;
 
 use rand::prelude::*;
 
 // Approximate Median implementation using reservoir sampling
 pub struct ApproxMedian {
-    reservoir: Vec<f64>,
+    reservoir: Vec<FLOAT>,
     num_samples: usize,
     rng: ThreadRng,
 }
@@ -12,9 +13,9 @@ pub struct ApproxMedian {
 const RESERVOIR_SIZE: usize = 1000;
 
 impl PartialAggregate for ApproxMedian {
-    type State = (Vec<f64>, usize);
-    type Input = f64;
-    type Output = Option<f64>;
+    type State = (Vec<FLOAT>, usize);
+    type Input = FLOAT;
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         ApproxMedian {

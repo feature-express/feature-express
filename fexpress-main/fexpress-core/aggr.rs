@@ -70,9 +70,9 @@ pub fn eval_agg_using_partial_agg(
     for (i, (obs_date, interval)) in obs_dates.iter().zip(intervals.iter()).enumerate() {
         // first initialize the aggregation table
         if i == 0 {
-            for (_, vs) in aggr_table.range(interval.start_dt_safe()..interval.end_dt_safe()) {
+            for (ts, vs) in aggr_table.range(interval.start_dt_safe()..interval.end_dt_safe()) {
                 for v in vs {
-                    partial_agg_state.update(v.aggr_eval.clone())
+                    partial_agg_state.update(v.aggr_eval.clone(), ts.clone())
                 }
             }
         } else {
@@ -90,13 +90,13 @@ pub fn eval_agg_using_partial_agg(
                 & (last_interval.end_dt > interval.start_dt);
 
             if subtract {
-                for (_, vs) in
+                for (ts, vs) in
                     aggr_table.range(last_interval.start_dt_safe()..interval.start_dt_safe())
                 {
                     // construct partial state to subtract
                     let mut partial_agg_sub = PartialAggregateWrapper::new(agg.agg_func.clone());
                     for v in vs {
-                        partial_agg_sub.update(v.aggr_eval.clone())
+                        partial_agg_sub.update(v.aggr_eval.clone(), ts.clone())
                     }
                     partial_agg_state.subtract_inplace(&partial_agg_sub);
                 }
@@ -105,20 +105,20 @@ pub fn eval_agg_using_partial_agg(
             match interval.start_dt.cmp(&last_interval.end_dt) {
                 Ordering::Greater | Ordering::Equal => {
                     partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
-                    for (_, vs) in
+                    for (ts, vs) in
                         aggr_table.range(interval.start_dt_safe()..interval.end_dt_safe())
                     {
                         for v in vs {
-                            partial_agg_state.update(v.aggr_eval.clone());
+                            partial_agg_state.update(v.aggr_eval.clone(), ts.clone());
                         }
                     }
                 }
                 Ordering::Less => {
-                    for (_, vs) in
+                    for (ts, vs) in
                         aggr_table.range(last_interval.end_dt_safe()..interval.end_dt_safe())
                     {
                         for v in vs {
-                            partial_agg_state.update(v.aggr_eval.clone());
+                            partial_agg_state.update(v.aggr_eval.clone(), ts.clone());
                         }
                     }
                 }
@@ -329,7 +329,6 @@ mod tests {
         event_context
     }
 
-    #[cfg(feature = "long-tests")]
     #[test]
     fn test_partial_agg_cases() {
         let event_context = get_event_context();
@@ -362,7 +361,10 @@ mod tests {
             event_on_obs_date: None,
         };
 
-        for agg in vec!["avg", "sum", "count", "var", "stdev"] {
+        for agg in vec![
+            "avg", "sum", "count", "var", "stdev", "min", "max", "first", "last", "argmin",
+            "argmax", "mode",
+        ] {
             for interval in vec![
                 "last 2 days",
                 "past",

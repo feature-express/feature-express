@@ -1,14 +1,15 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 #[derive(Clone)]
 pub struct HasDuplicateMin {
-    min_value: Option<f64>,
+    min_value: Option<FLOAT>,
     min_count: usize,
 }
 
 impl PartialAggregate for HasDuplicateMin {
-    type State = (Option<f64>, usize);
-    type Input = f64;
+    type State = (Option<FLOAT>, usize);
+    type Input = FLOAT;
     type Output = bool;
 
     fn new() -> Self {

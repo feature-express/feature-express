@@ -1,8 +1,12 @@
 from fexpress import Event, EventStoreSettings, ObservationDateConfig
 from fexpress import FeatureExpress
-from fexpress.sdk.observation_dates_config import Interval, DatePart, ObservationDatesConfigEnum
+from fexpress.sdk.observation_dates_config import (
+    Interval,
+    DatePart,
+    ObservationDatesConfigEnum,
+)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     settings = EventStoreSettings(include_events_on_obs_date=True, parallel=False)
     fx = FeatureExpress(settings)
 
@@ -40,7 +44,7 @@ if __name__ == '__main__':
             AVG(pressure) over past as pressure
         FOR
             @entities := user
-        """
+        """,
     )
 
     print(df)

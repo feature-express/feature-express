@@ -1,17 +1,18 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 pub struct Kurtosis {
     count: usize,
-    sum: f64,
-    sum_sq: f64,
-    sum_cub: f64,
-    sum_quart: f64,
+    sum: FLOAT,
+    sum_sq: FLOAT,
+    sum_cub: FLOAT,
+    sum_quart: FLOAT,
 }
 
 impl PartialAggregate for Kurtosis {
-    type State = (usize, f64, f64, f64, f64);
-    type Input = f64;
-    type Output = Option<f64>;
+    type State = (usize, FLOAT, FLOAT, FLOAT, FLOAT);
+    type Input = FLOAT;
+    type Output = Option<FLOAT>;
 
     fn new() -> Self {
         Kurtosis {
@@ -45,7 +46,7 @@ impl PartialAggregate for Kurtosis {
         if self.count < 4 {
             None
         } else {
-            let n = self.count as f64;
+            let n = self.count as FLOAT;
             let mean = self.sum / n;
             let variance = (self.sum_sq - n * mean * mean) / (n - 1.0);
             let m3 = (self.sum_cub - 3.0 * mean * self.sum_sq + 3.0 * mean * mean * self.sum) / n;
@@ -103,7 +104,7 @@ mod tests {
     fn test_kurtosis_empty() {
         let mut kurtosis = Kurtosis::new();
 
-        let expected_result: Option<f64> = None;
+        let expected_result: Option<FLOAT> = None;
         let result = kurtosis.evaluate();
 
         assert_eq!(result, expected_result);

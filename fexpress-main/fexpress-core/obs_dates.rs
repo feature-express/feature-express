@@ -201,10 +201,12 @@ impl ObservationDatesConfig {
             ObservationDatesConfig::ConditionalEvents(conditional) => {
                 let condition_expr = Expr::from_str(&conditional.condition)
                     .map_err(|_| anyhow!("Error parsing condition"))
-                    .with_context(|| format!(
-                        "Cannot parse conditional expressiong {}",
-                        conditional.condition
-                    ))?;
+                    .with_context(|| {
+                        format!(
+                            "Cannot parse conditional expressiong {}",
+                            conditional.condition
+                        )
+                    })?;
                 let hm = HashMap::new();
                 let events =
                     event_store.filter_events(&Box::new(condition_expr), query_config, &hm)?;

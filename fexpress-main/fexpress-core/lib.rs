@@ -36,6 +36,7 @@ pub mod feature_matrix;
 mod features;
 pub mod impls;
 pub mod interval;
+pub mod naive_aggregate_funcs;
 pub mod obs_dates;
 mod parser;
 mod partial_agg;

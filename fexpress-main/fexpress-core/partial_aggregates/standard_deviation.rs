@@ -1,15 +1,16 @@
 use crate::partial_agg::PartialAggregate;
+use crate::types::FLOAT;
 
 pub struct StandardDeviation {
     count: usize,
-    mean: f64,
-    m2: f64,
+    mean: FLOAT,
+    m2: FLOAT,
 }
 
 impl PartialAggregate for StandardDeviation {
-    type State = (usize, f64, f64);
-    type Input = f64;
-    type Output = f64;
+    type State = (usize, FLOAT, FLOAT);
+    type Input = FLOAT;
+    type Output = FLOAT;
 
     fn new() -> Self {
         StandardDeviation {
@@ -22,7 +23,7 @@ impl PartialAggregate for StandardDeviation {
     fn update(&mut self, input: Self::Input) {
         self.count += 1;
         let delta = input - self.mean;
-        self.mean += delta / self.count as f64;
+        self.mean += delta / self.count as FLOAT;
         let delta2 = input - self.mean;
         self.m2 += delta * delta2;
     }
@@ -32,9 +33,9 @@ impl PartialAggregate for StandardDeviation {
         let delta = other.mean - self.mean;
         let m2 = self.m2
             + other.m2
-            + delta * delta * (self.count * other.count) as f64 / total_count as f64;
+            + delta * delta * (self.count * other.count) as FLOAT / total_count as FLOAT;
         let mean =
-            (self.mean * self.count as f64 + other.mean * other.count as f64) / total_count as f64;
+            (self.mean * self.count as FLOAT + other.mean * other.count as FLOAT) / total_count as FLOAT;
 
         StandardDeviation {
             count: total_count,
@@ -47,7 +48,7 @@ impl PartialAggregate for StandardDeviation {
         if self.count < 2 {
             0.0
         } else {
-            (self.m2 / (self.count - 1) as f64).sqrt()
+            (self.m2 / (self.count - 1) as FLOAT).sqrt()
         }
     }
 }
