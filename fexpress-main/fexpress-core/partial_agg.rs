@@ -1,8 +1,14 @@
 use crate::ast::core::AggregateFunction;
+use crate::partial_aggregates::all::All;
+use crate::partial_aggregates::any::Any;
+use crate::partial_aggregates::argmax::ArgMax;
+use crate::partial_aggregates::argmin::ArgMin;
 use crate::partial_aggregates::first::First;
 use crate::partial_aggregates::last::Last;
+use crate::partial_aggregates::max_consecutive_true::MaxConsecutiveTrue;
 use crate::partial_aggregates::maximum::Maximum;
 use crate::partial_aggregates::minimum::Minimum;
+use crate::partial_aggregates::mode::Mode;
 use crate::types::{FLOAT, INT};
 use crate::value::{nan_to_none, Value};
 use chrono::NaiveDateTime;
@@ -197,6 +203,21 @@ pub enum PartialAggregateWrapper {
     Maximum(Maximum),
     First(First<NaiveDateTime, Value>),
     Last(Last<NaiveDateTime, Value>),
+    ArgMax(ArgMax<NaiveDateTime>),
+    ArgMin(ArgMin<NaiveDateTime>),
+    Mode(Mode<Value>),
+    Any(Any),
+    All(All),
+    MaxConsecutiveTrue(MaxConsecutiveTrue),
+}
+
+// implements match for pairs of variants of the same type and applies method to them
+macro_rules! gen_match_arms {
+    ($enum_name:ident, $variant:ident, $method:ident) => {
+        ($enum_name::$variant(a), $enum_name::$variant(b)) => $enum_name::$variant(a.$method(&b)),
+        ($enum_name::$variant(_), _) => panic!("Mismatched or unhandled variants in the left operand"),
+        (_, $enum_name::$variant(_)) => panic!("Mismatched or unhandled variants in the right operand"),
+    };
 }
 
 #[rustfmt::skip]
@@ -219,7 +240,13 @@ impl PartialAggregateWrapper {
             AggregateFunction::TimeOfFirst => unimplemented!(),
             AggregateFunction::TimeOfNext => unimplemented!(),
             AggregateFunction::AvgDaysBetween => unimplemented!(),
-            AggregateFunction::Values => unimplemented!()
+            AggregateFunction::Values => unimplemented!(),
+            AggregateFunction::ArgMax => PartialAggregateWrapper::ArgMax(ArgMax::new()),
+            AggregateFunction::ArgMin => PartialAggregateWrapper::ArgMin(ArgMin::new()),
+            AggregateFunction::Mode => PartialAggregateWrapper::Mode(Mode::new()),
+            AggregateFunction::Any => PartialAggregateWrapper::Any(Any::new()),
+            AggregateFunction::All => PartialAggregateWrapper::All(All::new()),
+            AggregateFunction::MaxConsecutiveTrue => PartialAggregateWrapper::MaxConsecutiveTrue(MaxConsecutiveTrue::new())
         }
     }
 
@@ -234,7 +261,13 @@ impl PartialAggregateWrapper {
             PartialAggregateWrapper::Minimum(s) => s.update(value.into()),
             PartialAggregateWrapper::Maximum(s) => s.update(value.into()),
             PartialAggregateWrapper::First(s) => s.update((ts, value.into())),
-            PartialAggregateWrapper::Last(s) => s.update((ts, value.into()))
+            PartialAggregateWrapper::Last(s) => s.update((ts, value.into())),
+            PartialAggregateWrapper::ArgMax(s) => s.update((ts, value.into())),
+            PartialAggregateWrapper::ArgMin(s) => s.update((ts, value.into())),
+            PartialAggregateWrapper::Mode(s) => s.update(value.into()),
+            PartialAggregateWrapper::Any(s) => s.update(value.into()),
+            PartialAggregateWrapper::All(s) => s.update(value.into()),
+            PartialAggregateWrapper::MaxConsecutiveTrue(s) => s.update((value.into(), ts))
         }
     }
 
@@ -250,6 +283,12 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => PartialAggregateWrapper::Maximum(a.merge(b)),
             (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => PartialAggregateWrapper::First(a.merge(b)),
             (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => PartialAggregateWrapper::Last(a.merge(b)),
+            (PartialAggregateWrapper::ArgMin(a), PartialAggregateWrapper::ArgMin(b)) => PartialAggregateWrapper::ArgMin(a.merge(b)),
+            (PartialAggregateWrapper::ArgMax(a), PartialAggregateWrapper::ArgMax(b)) => PartialAggregateWrapper::ArgMax(a.merge(b)),
+            (PartialAggregateWrapper::Mode(a), PartialAggregateWrapper::Mode(b)) => PartialAggregateWrapper::Mode(a.merge(b)),
+            (PartialAggregateWrapper::Any(a), PartialAggregateWrapper::Any(b)) => PartialAggregateWrapper::Any(a.merge(b)),
+            (PartialAggregateWrapper::All(a), PartialAggregateWrapper::All(b)) => PartialAggregateWrapper::All(a.merge(b)),
+            (PartialAggregateWrapper::MaxConsecutiveTrue(a), PartialAggregateWrapper::MaxConsecutiveTrue(b)) => PartialAggregateWrapper::MaxConsecutiveTrue(a.merge(b)),
             _ => panic!("Cannot merge Partial aggregates of different types")
         }
     }
@@ -265,7 +304,13 @@ impl PartialAggregateWrapper {
             PartialAggregateWrapper::Minimum(s) => s.evaluate().map_or(Value::None, Value::Num),
             PartialAggregateWrapper::Maximum(s) => s.evaluate().map_or(Value::None, Value::Num),
             PartialAggregateWrapper::First(s) => s.evaluate().map_or(Value::None, identity),
-            PartialAggregateWrapper::Last(s) => s.evaluate().map_or(Value::None, identity)
+            PartialAggregateWrapper::Last(s) => s.evaluate().map_or(Value::None, identity),
+            PartialAggregateWrapper::ArgMax(s) => s.evaluate().map_or(Value::None, Value::DateTime),
+            PartialAggregateWrapper::ArgMin(s) => s.evaluate().map_or(Value::None, Value::DateTime),
+            PartialAggregateWrapper::Mode(s) => s.evaluate().map_or(Value::None, identity),
+            PartialAggregateWrapper::Any(s) => Value::Bool(s.evaluate()),
+            PartialAggregateWrapper::All(s) => Value::Bool(s.evaluate()),
+            PartialAggregateWrapper::MaxConsecutiveTrue(s) => Value::Int(s.evaluate() as INT),
         };
         nan_to_none(val)
     }
@@ -282,7 +327,13 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => PartialAggregateWrapper::Maximum(a.subtract(b)),
             (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => PartialAggregateWrapper::First(a.subtract(b)),
             (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => PartialAggregateWrapper::Last(a.subtract(b)),
-            _ => panic!("Cannot merge Partial aggregates of different types")
+            (PartialAggregateWrapper::ArgMin(a), PartialAggregateWrapper::ArgMin(b)) => PartialAggregateWrapper::ArgMin(a.subtract(b)),
+            (PartialAggregateWrapper::ArgMax(a), PartialAggregateWrapper::ArgMax(b)) => PartialAggregateWrapper::ArgMax(a.subtract(b)),
+            (PartialAggregateWrapper::Mode(a), PartialAggregateWrapper::Mode(b)) => PartialAggregateWrapper::Mode(a.subtract(b)),
+            (PartialAggregateWrapper::Any(a), PartialAggregateWrapper::Any(b)) => PartialAggregateWrapper::Any(a.subtract(b)),
+            (PartialAggregateWrapper::All(a), PartialAggregateWrapper::All(b)) => PartialAggregateWrapper::All(a.subtract(b)),
+            (PartialAggregateWrapper::MaxConsecutiveTrue(a), PartialAggregateWrapper::MaxConsecutiveTrue(b)) => PartialAggregateWrapper::MaxConsecutiveTrue(a.subtract(b)),
+            _ => panic!("Cannot subtract Partial aggregates of different types")
         }
     }
 
@@ -298,7 +349,13 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => a.subtract_inplace(b),
             (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => a.subtract_inplace(b),
             (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => a.subtract_inplace(b),
-            _ => ()
+            (PartialAggregateWrapper::ArgMin(a), PartialAggregateWrapper::ArgMin(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::ArgMax(a), PartialAggregateWrapper::ArgMax(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::Mode(a), PartialAggregateWrapper::Mode(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::Any(a), PartialAggregateWrapper::Any(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::All(a), PartialAggregateWrapper::All(b)) => a.subtract_inplace(b),
+            (PartialAggregateWrapper::MaxConsecutiveTrue(a), PartialAggregateWrapper::MaxConsecutiveTrue(b)) => a.subtract_inplace(b),
+            _ => panic!("Cannot subtract_inplace Partial aggregates of different types")
         }
     }
 }

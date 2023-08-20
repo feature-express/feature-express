@@ -362,7 +362,8 @@ mod tests {
         };
 
         for agg in vec![
-            "avg", "sum", "count", "var", "stdev", "min", "max", "first", "last",
+            "avg", "sum", "count", "var", "stdev", "min", "max", "first", "last", "argmin",
+            "argmax", "mode",
         ] {
             for interval in vec![
                 "last 2 days",

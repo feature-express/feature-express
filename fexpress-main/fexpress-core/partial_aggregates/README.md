@@ -42,39 +42,41 @@ Aggregation Primitives (feature tools)
 
 Implemented
 
-All() - Calculates if all values are 'True' in a list.
-Any() - Determines if any value is 'True' in a list.
-Count() - Determines the total number of values, excluding NaN.
-AvgTimeBetween([unit]) - Computes the average number of seconds between consecutive events.
-First() - Determines the first value in a list.
-Last() - Determines the last value in a list.
-Max() - Calculates the highest value, ignoring NaN values.
-Median() - Determines the middlemost number in a list of values.
-Min() - Calculates the smallest value, ignoring NaN values.
-Sum() - Calculates the total addition, ignoring NaN.
-Std() - Computes the dispersion relative to the mean value, ignoring NaN.
-NumUnique() - Determines the number of distinct values, ignoring NaN values.
+- All() - Calculates if all values are 'True' in a list.
+- Any() - Determines if any value is 'True' in a list.
+- Count() - Determines the total number of values, excluding NaN.
+- AvgTimeBetween([unit]) - Computes the average number of seconds between consecutive events.
+- First() - Determines the first value in a list.
+- Last() - Determines the last value in a list.
+- Max() - Calculates the highest value, ignoring NaN values.
+- Median() - Determines the middlemost number in a list of values.
+- Min() - Calculates the smallest value, ignoring NaN values.
+- Sum() - Calculates the total addition, ignoring NaN.
+- Std() - Computes the dispersion relative to the mean value, ignoring NaN.
+- NumUnique() - Determines the number of distinct values, ignoring NaN values.
+- MaxConsecutiveTrue() - Determines the maximum number of consecutive True values in the input
+
+Possible as derivatives
+
+- MaxConsecutiveFalse() - Determines the maximum number of consecutive False values in the input
+- MaxConsecutiveNegatives([skipna]) - Determines the maximum number of consecutive negative values in the input
+- MaxConsecutivePositives([skipna]) - Determines the maximum number of consecutive positive values in the input
+- MaxConsecutiveZeros([skipna]) - Determines the maximum number of consecutive zero values in the input
+- NumConsecutiveGreaterMean([skipna]) - Determines the length of the longest subsequence above the mean.
+- NumConsecutiveLessMean([skipna]) - Determines the length of the longest subsequence below the mean.
+- CountAboveMean([skipna]) - Calculates the number of values that are above the mean. 
+- CountBelowMean([skipna]) - Determines the number of values that are below the mean. 
+- CountGreaterThan([threshold]) - Determines the number of values greater than a controllable threshold. 
+- CountInsideNthSTD([n]) - Determines the count of observations that lie inside 
+- CountInsideRange([lower, upper, skipna]) - Determines the number of values that fall within a certain range. 
+- CountLessThan([threshold]) - Determines the number of values less than a controllable threshold. 
+- CountOutsideRange([lower, upper, skipna]) - Determines the number of values that fall outside a certain range.
 
 Not implemented
 
-CountAboveMean([skipna]) - Calculates the number of values that are above the mean.
-CountBelowMean([skipna]) - Determines the number of values that are below the mean.
-CountGreaterThan([threshold]) - Determines the number of values greater than a controllable threshold.
-CountInsideNthSTD([n]) - Determines the count of observations that lie inside
-CountInsideRange([lower, upper, skipna]) - Determines the number of values that fall within a certain range.
-CountLessThan([threshold]) - Determines the number of values less than a controllable threshold.
-CountOutsideNthSTD([n]) - Determines the number of observations that lie outside
-CountOutsideRange([lower, upper, skipna]) - Determines the number of values that fall outside a certain range.
 Entropy([dropna, base]) - Calculates the entropy for a categorical column
-MaxConsecutiveTrue() - Determines the maximum number of consecutive True values in the input
-MaxConsecutiveFalse() - Determines the maximum number of consecutive False values in the input
-MaxConsecutiveNegatives([skipna]) - Determines the maximum number of consecutive negative values in the input
-MaxConsecutivePositives([skipna]) - Determines the maximum number of consecutive positive values in the input
-MaxConsecutiveZeros([skipna]) - Determines the maximum number of consecutive zero values in the input
 Mode() - Determines the most commonly repeated value.
 NMostCommon([n]) - Determines the n most common elements.
-NumConsecutiveGreaterMean([skipna]) - Determines the length of the longest subsequence above the mean.
-NumConsecutiveLessMean([skipna]) - Determines the length of the longest subsequence below the mean.
 NumTrue() - Counts the number of True values.
 PercentTrue() - Determines the percent of True values.
 Skew() - Computes the extent to which a distribution differs from a normal distribution.
@@ -85,3 +87,4 @@ TimeSinceLastMax() - Calculates the time since the maximum value occurred.
 TimeSinceLastMin() - Calculates the time since the minimum value occurred.
 TimeSinceLastTrue() - Calculates the time since the last True value.
 Trend() - Calculates the trend of a column over time.
+CountOutsideNthSTD([n]) - Determines the number of observations that lie outside

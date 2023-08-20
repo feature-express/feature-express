@@ -52,7 +52,7 @@ where
     }
 
     fn evaluate(&self) -> Self::Output {
-        self.state.values().next().and_then(|v| v.first().cloned())
+        self.state.values().next().and_then(|v| v.first().cloned()) // Only change from ArgMax is here
     }
 }
 
@@ -85,7 +85,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+mod argmin_tests {
     use super::*;
 
     #[test]
@@ -97,7 +97,7 @@ mod tests {
             argmin.update((timestamp, value));
         }
 
-        let expected_result = Some(1); // because 1.5 is the smallest value and its timestamp is 1
+        let expected_result = Some(1); // because 2.0 is the smallest value and its timestamp is 2
         let result = argmin.evaluate();
 
         assert_eq!(result, expected_result);

@@ -35,7 +35,7 @@ import fexpress as fx
 
 if os.path.exists("/kaggle/input/weather-dataset-rattle-package/weatherAUS.csv"):
     df = pd.read_csv(
-        "/kaggle/input/weather-dataset-rattle-package/weatherAUS.csv", nrows=10000
+        "/kaggle/input/weather-dataset-rattle-package/weathert sAUS.csv", nrows=10000
     )
 else:
     df = pd.read_csv("datasets/weatherAUS.csv", nrows=100000)

@@ -506,6 +506,9 @@ pub enum AggrExprFunction {
     TimeOfLast(BExpr),
     TimeOfNext(BExpr),
     AvgTimeBetween(BExpr),
+    ArgMax(BExpr),
+    ArgMin(BExpr),
+    MaxConsecutiveTrue(BExpr),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -527,4 +530,10 @@ pub enum AggregateFunction {
     TimeOfNext,
     AvgDaysBetween,
     Values,
+    ArgMax,
+    ArgMin,
+    Mode,
+    Any,
+    All,
+    MaxConsecutiveTrue,
 }

@@ -18,5 +18,5 @@ pub mod last;
 pub mod max_consecutive_true;
 pub mod maximum;
 pub mod minimum;
+pub mod mode;
 pub mod n_unique;
-// mod kurtosis;

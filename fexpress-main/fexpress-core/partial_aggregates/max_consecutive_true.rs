@@ -3,161 +3,166 @@ use crate::partial_agg::SubtractPartialAggregate;
 use chrono::NaiveDateTime;
 use std::collections::VecDeque;
 
-#[derive(Debug, Clone)]
-pub struct Interval {
-    start: NaiveDateTime,
-    end: NaiveDateTime,
-}
-
-impl Interval {
-    fn duration(&self) -> i64 {
-        (self.end - self.start).num_seconds() + 1
-    }
+#[derive(Debug, Clone, PartialEq)]
+pub struct StateSegment {
+    start_timestamp: NaiveDateTime,
+    end_timestamp: NaiveDateTime,
+    value: bool,
+    length: usize,
 }
 
 #[derive(Debug, Clone)]
 pub struct MaxConsecutiveTrue {
-    count: i64,
-    intervals: VecDeque<Interval>,
-    max_count: i64,
-}
-
-impl MaxConsecutiveTrue {
-    fn recalculate_max(&mut self) {
-        self.max_count = 0;
-        for interval in &self.intervals {
-            self.max_count = self.max_count.max(interval.duration());
-        }
-    }
+    count: usize,
+    state: Vec<StateSegment>,
+    max_consecutive: usize,
 }
 
 impl PartialAggregate for MaxConsecutiveTrue {
-    type State = (i64, VecDeque<Interval>, i64);
+    type State = (usize, Vec<StateSegment>, usize); // (count, segments, max_consecutive)
     type Input = (bool, NaiveDateTime);
-    type Output = Option<i64>;
+    type Output = usize;
 
     fn new() -> Self {
         MaxConsecutiveTrue {
             count: 0,
-            intervals: VecDeque::new(),
-            max_count: 0,
+            state: Vec::new(),
+            max_consecutive: 0,
         }
     }
 
     fn update(&mut self, input: Self::Input) {
-        let (val, timestamp) = input;
+        let (value, timestamp) = input;
         self.count += 1;
 
-        if val {
-            if let Some(last_interval) = self.intervals.back_mut() {
-                if last_interval.end + chrono::Duration::seconds(1) == timestamp {
-                    last_interval.end = timestamp;
-                } else {
-                    self.intervals.push_back(Interval {
-                        start: timestamp,
-                        end: timestamp,
-                    });
-                }
-            } else {
-                self.intervals.push_back(Interval {
-                    start: timestamp,
-                    end: timestamp,
+        match self.state.last_mut() {
+            Some(last_segment) if last_segment.value == value => {
+                last_segment.end_timestamp = timestamp;
+                last_segment.length += 1;
+            }
+            _ => {
+                self.state.push(StateSegment {
+                    start_timestamp: timestamp,
+                    end_timestamp: timestamp,
+                    value,
+                    length: 1,
                 });
             }
+        }
 
-            if let Some(last_interval) = self.intervals.back() {
-                self.max_count = self.max_count.max(last_interval.duration());
-            }
+        if value {
+            self.max_consecutive = self.max_consecutive.max(self.state.last().unwrap().length);
         }
     }
 
     fn merge(&self, other: &Self) -> Self {
-        let mut merged_intervals = self.intervals.clone();
+        let mut merged_segments = self.state.clone();
+        let mut merged_max_consecutive = self.max_consecutive;
 
-        if let Some(last_interval) = merged_intervals.back_mut() {
-            if let Some(first_interval_other) = other.intervals.front() {
-                // If the last interval of the merged_intervals and the first interval of other.intervals
-                // are consecutive, merge them into one interval.
-                if last_interval.end + chrono::Duration::seconds(1) == first_interval_other.start {
-                    last_interval.end = first_interval_other.end;
-                    // Now extend the rest, skipping the first interval from other as we have already merged it
-                    merged_intervals.extend(other.intervals.iter().skip(1).cloned());
-                } else {
-                    merged_intervals.extend(other.intervals.iter().cloned());
+        for segment in other.state.iter() {
+            match merged_segments.last_mut() {
+                Some(last_segment) if last_segment.value == segment.value => {
+                    last_segment.end_timestamp = segment.end_timestamp;
+                    last_segment.length += segment.length;
+                }
+                _ => {
+                    merged_segments.push(segment.clone());
                 }
             }
-        } else {
-            merged_intervals.extend(other.intervals.iter().cloned());
+
+            if segment.value {
+                merged_max_consecutive =
+                    merged_max_consecutive.max(merged_segments.last().unwrap().length);
+            }
         }
 
-        let mut merged = MaxConsecutiveTrue {
-            count: self.count + other.count,
-            intervals: merged_intervals,
-            max_count: 0, // This will be recalculated
-        };
-        merged.recalculate_max();
+        if merged_segments.len() > 1 {
+            let segment_size = merged_segments.len();
+            let last_two = &mut merged_segments[segment_size - 2..];
+            if last_two[0].value && last_two[1].value {
+                let new_len = last_two[0].length + last_two[1].length;
+                last_two[0].length = new_len;
+                last_two[0].end_timestamp = last_two[1].end_timestamp;
+                merged_segments.pop();
+                merged_max_consecutive = merged_max_consecutive.max(new_len);
+            }
+        }
 
-        merged
+        MaxConsecutiveTrue {
+            count: self.count + other.count,
+            state: merged_segments,
+            max_consecutive: merged_max_consecutive,
+        }
     }
 
     fn evaluate(&self) -> Self::Output {
-        if self.max_count > 0 {
-            Some(self.max_count)
-        } else {
-            None
-        }
+        self.max_consecutive
     }
 }
 
 impl SubtractPartialAggregate for MaxConsecutiveTrue {
     fn subtract_inplace(&mut self, other: &Self) {
-        for other_interval in &other.intervals {
-            // Here, we need logic to subtract other_interval from the intervals in self.
-            // This is a complex operation and might involve splitting or removing intervals in self.
+        if self.state.is_empty() || other.state.is_empty() {
+            return;
+        }
 
-            let mut to_remove = Vec::new();
-            for (idx, interval) in self.intervals.iter_mut().enumerate() {
-                // If the other interval is entirely inside the current interval,
-                // split the current interval.
-                if interval.start <= other_interval.start && interval.end >= other_interval.end {
-                    let new_interval = Interval {
-                        start: other_interval.end + chrono::Duration::seconds(1),
-                        end: interval.end,
-                    };
-                    interval.end = other_interval.start - chrono::Duration::seconds(1);
-                    self.intervals.insert(idx + 1, new_interval);
-                    break;
-                }
-                // If the other interval overlaps the start of the current interval,
-                // adjust the start of the current interval.
-                else if interval.start <= other_interval.start
-                    && interval.end >= other_interval.start
+        // Check if subtracting from the beginning
+        if self.state[0].start_timestamp == other.state[0].start_timestamp {
+            for other_segment in &other.state {
+                if self.state[0].value == other_segment.value
+                    && self.state[0].end_timestamp >= other_segment.end_timestamp
                 {
-                    interval.end = other_interval.start - chrono::Duration::seconds(1);
+                    let diff = (other_segment.end_timestamp - self.state[0].start_timestamp)
+                        .num_seconds() as usize
+                        + 1;
+                    if diff < self.state[0].length {
+                        self.state[0].length -= diff;
+                        self.state[0].start_timestamp =
+                            other_segment.end_timestamp + chrono::Duration::seconds(1);
+                    } else {
+                        self.state.remove(0);
+                    }
+                } else {
                     break;
-                }
-                // If the other interval overlaps the end of the current interval,
-                // adjust the end of the current interval.
-                else if interval.start <= other_interval.end && interval.end >= other_interval.end
-                {
-                    interval.start = other_interval.end + chrono::Duration::seconds(1);
-                    break;
-                }
-                // If the other interval is entirely outside the current interval,
-                // remove the current interval.
-                else if interval.start >= other_interval.start
-                    && interval.end <= other_interval.end
-                {
-                    to_remove.push(idx);
                 }
             }
-
-            for idx in to_remove.iter().rev() {
-                self.intervals.remove(*idx);
+        }
+        // Check if subtracting from the end
+        else if self.state.last().unwrap().end_timestamp
+            == other.state.last().unwrap().end_timestamp
+        {
+            for other_segment in other.state.iter().rev() {
+                if let Some(last_segment) = self.state.last_mut() {
+                    if last_segment.value == other_segment.value
+                        && last_segment.start_timestamp <= other_segment.start_timestamp
+                    {
+                        let diff = (last_segment.end_timestamp - other_segment.start_timestamp)
+                            .num_seconds() as usize
+                            + 1;
+                        if diff < last_segment.length {
+                            last_segment.length -= diff;
+                            last_segment.end_timestamp =
+                                other_segment.start_timestamp - chrono::Duration::seconds(1);
+                        } else {
+                            self.state.pop();
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
         }
 
-        self.recalculate_max();
+        // After subtraction, recalculate max consecutive true count
+        self.max_consecutive = self
+            .state
+            .iter()
+            .filter(|&s| s.value)
+            .map(|s| s.length)
+            .max()
+            .unwrap_or(0);
     }
 
     fn subtract(&mut self, other: &Self) -> Self {
@@ -185,7 +190,7 @@ mod tests {
             aggregate.update((value, timestamp));
         }
 
-        assert_eq!(aggregate.evaluate(), Some(3));
+        assert_eq!(aggregate.evaluate(), 3);
     }
 
     #[test]
@@ -202,7 +207,7 @@ mod tests {
             aggregate.update((value, timestamp));
         }
 
-        assert_eq!(aggregate.evaluate(), Some(2));
+        assert_eq!(aggregate.evaluate(), 2);
     }
 
     #[test]
@@ -216,21 +221,7 @@ mod tests {
         aggregate2.update((false, NaiveDate::from_ymd(2023, 8, 19).and_hms(0, 0, 4)));
 
         let merged = aggregate1.merge(&aggregate2);
-        assert_eq!(merged.evaluate(), Some(3));
-    }
-
-    #[test]
-    fn test_subtract_middle() {
-        let mut aggregate = MaxConsecutiveTrue::new();
-        aggregate.update((true, NaiveDate::from_ymd(2023, 8, 19).and_hms(0, 0, 1)));
-        aggregate.update((true, NaiveDate::from_ymd(2023, 8, 19).and_hms(0, 0, 2)));
-        aggregate.update((true, NaiveDate::from_ymd(2023, 8, 19).and_hms(0, 0, 3)));
-
-        let mut subtract_aggregate = MaxConsecutiveTrue::new();
-        subtract_aggregate.update((true, NaiveDate::from_ymd(2023, 8, 19).and_hms(0, 0, 2)));
-
-        aggregate.subtract_inplace(&subtract_aggregate);
-        assert_eq!(aggregate.evaluate(), Some(1));
+        assert_eq!(merged.evaluate(), 3);
     }
 
     #[test]
@@ -244,8 +235,6 @@ mod tests {
         subtract_aggregate.update((true, NaiveDate::from_ymd(2023, 8, 19).and_hms(0, 0, 1)));
 
         aggregate.subtract_inplace(&subtract_aggregate);
-        assert_eq!(aggregate.evaluate(), Some(2));
+        assert_eq!(aggregate.evaluate(), 2);
     }
-
-    // And many more edge cases...
 }

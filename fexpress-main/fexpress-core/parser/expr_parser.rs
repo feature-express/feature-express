@@ -17,6 +17,7 @@ use pest::{
 };
 use pest_derive::Parser;
 use strum::IntoEnumIterator;
+use strum_macros::EnumString;
 
 use crate::event::AttributeKey;
 use crate::interval::{
@@ -708,6 +709,12 @@ fn match_aggr0(
         "time_of_next" => create_aggr_expr!(AggregateFunction::TimeOfNext),
         "avg_time_between" => create_aggr_expr!(AggregateFunction::AvgDaysBetween),
         "values" => create_aggr_expr!(AggregateFunction::Values),
+        "argmin" => create_aggr_expr!(AggregateFunction::ArgMin),
+        "argmax" => create_aggr_expr!(AggregateFunction::ArgMax),
+        "mode" => create_aggr_expr!(AggregateFunction::Mode),
+        "any" => create_aggr_expr!(AggregateFunction::Any),
+        "all" => create_aggr_expr!(AggregateFunction::All),
+        "max_consecutive_true" => create_aggr_expr!(AggregateFunction::MaxConsecutiveTrue),
         _ => panic!("not implemented {}", name),
     }
 }
