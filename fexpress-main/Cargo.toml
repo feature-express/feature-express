@@ -2,7 +2,7 @@
 authors = ["Paweł Jankiewicz <p.jankiewicz@gmail.com>"]
 edition = "2018"
 name = "fexpress-main"
-version = "0.0.2"
+version = "0.0.3"
 
 [dependencies]
 csv = "1.2.2"
