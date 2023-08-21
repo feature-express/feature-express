@@ -96,7 +96,7 @@ pub fn eval_context_dispatcher(
                 AggregateFunction::Count
                 | AggregateFunction::Sum
                 | AggregateFunction::Avg
-                | AggregateFunction::StDev
+                | AggregateFunction::Stdev
                 | AggregateFunction::Min
                 | AggregateFunction::Max
                 | AggregateFunction::First
@@ -1052,7 +1052,7 @@ fn calc_agg(
         AggregateFunction::Avg => naive_aggregate_funcs::mean(&event_expr_vec),
         AggregateFunction::Median => naive_aggregate_funcs::median(&event_expr_vec),
         AggregateFunction::Var => naive_aggregate_funcs::var(&event_expr_vec),
-        AggregateFunction::StDev => naive_aggregate_funcs::stdev(&event_expr_vec),
+        AggregateFunction::Stdev => naive_aggregate_funcs::stdev(&event_expr_vec),
         AggregateFunction::Last => naive_aggregate_funcs::last(&event_expr_vec),
         AggregateFunction::Nth(n_expr) => {
             naive_aggregate_funcs::nth(&event_expr_vec, stored_variables, n_expr)
@@ -1065,8 +1065,8 @@ fn calc_agg(
             naive_aggregate_funcs::avg_days_between(&event_expr_vec)
         }
         AggregateFunction::Values => naive_aggregate_funcs::values(&event_expr_vec),
-        AggregateFunction::ArgMax => naive_aggregate_funcs::argmax(&event_expr_vec),
-        AggregateFunction::ArgMin => naive_aggregate_funcs::argmin(&event_expr_vec),
+        AggregateFunction::Argmax => naive_aggregate_funcs::argmax(&event_expr_vec),
+        AggregateFunction::Argmin => naive_aggregate_funcs::argmin(&event_expr_vec),
         AggregateFunction::Mode => naive_aggregate_funcs::mode(&event_expr_vec),
         AggregateFunction::Any => naive_aggregate_funcs::any(&event_expr_vec),
         AggregateFunction::All => naive_aggregate_funcs::all(&event_expr_vec),
@@ -1787,7 +1787,7 @@ mod tests {
     #[test]
     fn test_agg_avg_time_between() {
         // Calculating the average time between events where `temp` > 0.
-        let result = eval_expr("avg_time_between(temp > 0) over past".into(), "a".into());
+        let result = eval_expr("avg_days_between(temp > 0) over past".into(), "a".into());
         // Assuming the events where `temp` > 0 are at times 1.0, 2.0, and 4.0, the average time between them should be 1.5.
         assert_eq!(result, Value::Num(1.0));
     }
@@ -1806,7 +1806,7 @@ mod tests {
     #[test]
     fn test_agg_avg_time_between_temp_gt_3() {
         // Calculating the average time between events where `temp` > 3.
-        let result = eval_expr("avg_time_between(temp > 3) over past".into(), "a".into());
+        let result = eval_expr("avg_days_between(temp > 3) over past".into(), "a".into());
         // Assuming the events where `temp` > 3 are at times 4.0, 5.0, and 6.0, the average time between them should be 1.0.
         assert_eq!(result, Value::Num(1.0));
     }

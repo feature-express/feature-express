@@ -16,7 +16,7 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
-use strum::IntoEnumIterator;
+use strum::{IntoEnumIterator, ParseError};
 use strum_macros::EnumString;
 
 use crate::event::AttributeKey;
@@ -678,44 +678,17 @@ fn match_aggr0(
 ) -> Expr {
     let groupby_expr = groupby_expr.map(Box::new);
     let where_expr = where_expr.map(Box::new);
-
-    macro_rules! create_aggr_expr {
-        ($func:expr) => {
-            Expr::Aggr(AggrExpr {
-                agg_func: $func,
-                agg_expr: Box::new(arg1),
-                when: interval,
-                from: from,
-                groupby: groupby_expr,
-                cond: where_expr,
-                having: having_expr,
-            })
-        };
-    }
-
-    match name {
-        "count" => create_aggr_expr!(AggregateFunction::Count),
-        "sum" => create_aggr_expr!(AggregateFunction::Sum),
-        "min" => create_aggr_expr!(AggregateFunction::Min),
-        "max" => create_aggr_expr!(AggregateFunction::Max),
-        "avg" => create_aggr_expr!(AggregateFunction::Avg),
-        "median" => create_aggr_expr!(AggregateFunction::Median),
-        "var" => create_aggr_expr!(AggregateFunction::Var),
-        "stdev" => create_aggr_expr!(AggregateFunction::StDev),
-        "last" => create_aggr_expr!(AggregateFunction::Last),
-        "first" => create_aggr_expr!(AggregateFunction::First),
-        "time_of_first" => create_aggr_expr!(AggregateFunction::TimeOfFirst),
-        "time_of_last" => create_aggr_expr!(AggregateFunction::TimeOfLast),
-        "time_of_next" => create_aggr_expr!(AggregateFunction::TimeOfNext),
-        "avg_time_between" => create_aggr_expr!(AggregateFunction::AvgDaysBetween),
-        "values" => create_aggr_expr!(AggregateFunction::Values),
-        "argmin" => create_aggr_expr!(AggregateFunction::ArgMin),
-        "argmax" => create_aggr_expr!(AggregateFunction::ArgMax),
-        "mode" => create_aggr_expr!(AggregateFunction::Mode),
-        "any" => create_aggr_expr!(AggregateFunction::Any),
-        "all" => create_aggr_expr!(AggregateFunction::All),
-        "max_consecutive_true" => create_aggr_expr!(AggregateFunction::MaxConsecutiveTrue),
-        _ => panic!("not implemented {}", name),
+    match AggregateFunction::from_str(name) {
+        Ok(func) => Expr::Aggr(AggrExpr {
+            agg_func: func,
+            agg_expr: Box::new(arg1),
+            when: interval,
+            from,
+            groupby: groupby_expr,
+            cond: where_expr,
+            having: having_expr,
+        }),
+        Err(err) => Expr::ParsingError(format!("Cannot parse expression: {}", err.to_string())),
     }
 }
 

@@ -23,6 +23,7 @@ use crate::ast::analyze::CalculationNode;
 use crate::ast::traverse::traverse_expr;
 use std::hash::{Hash, Hasher};
 use std::iter::FromIterator;
+use strum_macros::EnumString;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, EnumAsInner)]
 pub enum Expr {
@@ -106,6 +107,12 @@ pub enum Expr {
 
     // error
     ParsingError(String),
+}
+
+impl Default for Expr {
+    fn default() -> Self {
+        Expr::None
+    }
 }
 
 impl Expr {
@@ -336,7 +343,7 @@ impl Display for ExprFunc {
             ExprFunc::Upper(a) => write!(f, "upper({})", a),
             ExprFunc::Replace(a, b, c) => write!(f, "replace({}, {}, {})", a, b, c),
             ExprFunc::StartsWith(a, b) => write!(f, "startswith({}, {})", a, b),
-            ExprFunc::EndsWith(a, b) => write!(f, "endsiwth({}, {})", a, b),
+            ExprFunc::EndsWith(a, b) => write!(f, "endswith({}, {})", a, b),
             ExprFunc::Contains(a, b) => write!(f, "contains({}, {})", a, b),
             ExprFunc::RegexMatch(a, b) => write!(f, "regex_match({}, {})", a, b),
             ExprFunc::RegexExtract(a, b) => write!(f, "regex_extract({}, {})", a, b),
@@ -511,7 +518,8 @@ pub enum AggrExprFunction {
     MaxConsecutiveTrue(BExpr),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, EnumString)]
+#[strum(serialize_all = "snake_case")]
 #[allow(dead_code)]
 pub enum AggregateFunction {
     Count,
@@ -521,7 +529,7 @@ pub enum AggregateFunction {
     Avg,
     Median,
     Var,
-    StDev,
+    Stdev,
     Last,
     Nth(BExpr),
     First,
@@ -530,8 +538,8 @@ pub enum AggregateFunction {
     TimeOfNext,
     AvgDaysBetween,
     Values,
-    ArgMax,
-    ArgMin,
+    Argmax,
+    Argmin,
     Mode,
     Any,
     All,

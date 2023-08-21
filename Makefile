@@ -18,6 +18,7 @@ $(QUICKTYPE_OUTPUT_DIR)/%.json:
 	cargo run --bin generate_json_schemas
 
 python:
+	rm -f target/wheels/*.whl
 	cd fexpress-py && maturin build --release -i python
 	pip install target/wheels/*.whl --force-reinstall
 	cd fexpress-py && pytest tests
