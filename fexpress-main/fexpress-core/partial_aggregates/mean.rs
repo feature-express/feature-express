@@ -1,6 +1,7 @@
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
 use crate::types::FLOAT;
 
+#[derive(Debug, Clone)]
 pub struct Mean {
     count: usize,
     sum: FLOAT,

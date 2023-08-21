@@ -2,32 +2,32 @@ use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
 use crate::types::FLOAT;
 
 #[derive(Clone, Debug)]
-pub struct Sum {
+pub struct Product {
     count: usize,
-    total: FLOAT,
+    product: FLOAT,
 }
 
-impl PartialAggregate for Sum {
+impl PartialAggregate for Product {
     type State = (usize, FLOAT);
     type Input = FLOAT;
     type Output = Option<FLOAT>;
 
     fn new() -> Self {
-        Sum {
+        Product {
             count: 0,
-            total: 0.0,
+            product: 1.0, // Initialize to 1 for multiplication.
         }
     }
 
     fn update(&mut self, input: Self::Input) {
         self.count += 1;
-        self.total += input;
+        self.product *= input;
     }
 
     fn merge(&self, other: &Self) -> Self {
-        Sum {
+        Product {
             count: self.count + other.count,
-            total: self.total + other.total,
+            product: self.product * other.product,
         }
     }
 
@@ -35,15 +35,20 @@ impl PartialAggregate for Sum {
         if self.count == 0 {
             None
         } else {
-            Some(self.total)
+            Some(self.product)
         }
     }
 }
 
-impl SubtractPartialAggregate for Sum {
+impl SubtractPartialAggregate for Product {
     fn subtract_inplace(&mut self, other: &Self) {
         self.count -= other.count;
-        self.total -= other.total;
+        if other.product != 0.0 {
+            self.product /= other.product;
+        } else {
+            // Handle the case when other.product is 0
+            self.product = 0.0;
+        }
     }
 
     fn subtract(&mut self, other: &Self) -> Self {
@@ -58,47 +63,47 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sum() {
+    fn test_product() {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        let mut sum = Sum::new();
+        let mut product = Product::new();
 
         for value in data {
-            sum.update(value);
+            product.update(value);
         }
 
-        let expected_result = Some(15.0);
-        let result = sum.evaluate();
+        let expected_result = Some(120.0);
+        let result = product.evaluate();
 
         assert_eq!(result, expected_result);
     }
 
     #[test]
-    fn test_sum_merge() {
+    fn test_product_merge() {
         let data1 = vec![1.0, 2.0, 3.0];
         let data2 = vec![4.0, 5.0];
-        let mut sum1 = Sum::new();
-        let mut sum2 = Sum::new();
+        let mut product1 = Product::new();
+        let mut product2 = Product::new();
 
         for value in data1 {
-            sum1.update(value);
+            product1.update(value);
         }
         for value in data2 {
-            sum2.update(value);
+            product2.update(value);
         }
 
-        let sum_merged = sum1.merge(&sum2);
-        let expected_result = Some(15.0);
-        let result = sum_merged.evaluate();
+        let product_merged = product1.merge(&product2);
+        let expected_result = Some(120.0);
+        let result = product_merged.evaluate();
 
         assert_eq!(result, expected_result);
     }
 
     #[test]
-    fn test_sum_empty() {
-        let sum = Sum::new();
+    fn test_product_empty() {
+        let product = Product::new();
 
         let expected_result: Option<FLOAT> = None;
-        let result = sum.evaluate();
+        let result = product.evaluate();
 
         assert_eq!(result, expected_result);
     }

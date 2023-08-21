@@ -1,7 +1,8 @@
 use crate::partial_agg::{PartialAggregate, SubtractPartialAggregate};
-use crate::value::Value;
 use crate::types::FLOAT;
+use crate::value::Value;
 
+#[derive(Debug, Clone)]
 pub struct Count {
     count: usize,
 }
@@ -9,7 +10,7 @@ pub struct Count {
 impl PartialAggregate for Count {
     type State = usize;
     type Input = Value;
-    type Output = Option<usize>;
+    type Output = usize;
 
     fn new() -> Self {
         Count { count: 0 }
@@ -26,11 +27,7 @@ impl PartialAggregate for Count {
     }
 
     fn evaluate(&self) -> Self::Output {
-        if self.count == 0 {
-            None
-        } else {
-            Some(self.count)
-        }
+        self.count
     }
 }
 
@@ -61,7 +58,7 @@ mod tests {
             count.update(value);
         }
 
-        let expected_result = Some(3);
+        let expected_result = 3 as usize;
         let result = count.evaluate();
 
         assert_eq!(result, expected_result);
@@ -71,7 +68,7 @@ mod tests {
     fn test_count_empty() {
         let count = Count::new();
 
-        let expected_result: Option<usize> = None;
+        let expected_result: usize = 0;
         let result = count.evaluate();
 
         assert_eq!(result, expected_result);

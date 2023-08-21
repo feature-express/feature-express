@@ -392,6 +392,8 @@ mod tests {
                         (Some(a), Some(b)) => assert!((a - b).abs() < 1e06),
                         (Some(a), None) if a.abs() > 1e06 => panic!("{:?} != {:?}", a, b),
                         (Some(a), None) if a.abs() <= 1e06 => (),
+                        (Some(0.0), None) => (),
+                        (None, Some(0.0)) => (),
                         (None, Some(b)) => panic!("{:?} != {:?}", a, b),
                         _ => (),
                     }
