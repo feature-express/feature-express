@@ -117,6 +117,15 @@ pub fn sum(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Er
     }
 }
 
+pub fn product(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+    let v = eval::extract_num_vector(event_expr_vec);
+    if !v.is_empty() {
+        Ok(Value::Num(v.iter().fold(1.0, |acc, &x| acc * x) as FLOAT))
+    } else {
+        Ok(Value::None)
+    }
+}
+
 pub fn count(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
     Ok(Value::Int(event_expr_vec.len() as INT))
 }
@@ -281,4 +290,23 @@ pub fn max_consecutive_true(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<
         max_count = current_count;
     }
     Ok(Value::Int(max_count as INT))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use chrono::NaiveDateTime;
+    use crate::value::ValueWithTimestamp;
+
+    #[test]
+    fn test_product() {
+        let v = vec![
+            ValueWithTimestamp{value: Value::Int(1), ts: NaiveDateTime::default()},
+            ValueWithTimestamp{value: Value::Int(2), ts: NaiveDateTime::default()},
+            ValueWithTimestamp{value: Value::Int(3), ts: NaiveDateTime::default()},
+            ValueWithTimestamp{value: Value::Int(4), ts: NaiveDateTime::default()},
+            ValueWithTimestamp{value: Value::Int(5), ts: NaiveDateTime::default()}
+        ];
+        assert_eq!(product(&v).unwrap(), Value::Num(120.0));
+    }
 }

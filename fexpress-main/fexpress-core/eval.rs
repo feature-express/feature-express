@@ -9,7 +9,7 @@ use itertools::Itertools;
 use vec1::Vec1;
 
 use crate::aggr::eval_agg_using_partial_agg;
-use crate::ast::core::{AggrExpr, AggregateFunction, BExpr, Expr, ExprFunc, HavingExprType};
+use crate::ast::core::{AggrExpr, AggregateFunction, BExpr, Expr, ExprFunc, HavingExprType, PartialAggregateType};
 use crate::evaluation::date;
 use crate::evaluation::date::{
     eval_current_date, eval_current_time, eval_date_add, eval_date_part, eval_date_sub, eval_day,
@@ -92,23 +92,14 @@ pub fn eval_context_dispatcher(
 ) -> Result<HashMap<Timestamp, Value>> {
     let result = match expr {
         Expr::Aggr(ref agg_expr) => {
-            match agg_expr.agg_func {
-                AggregateFunction::Count
-                | AggregateFunction::Sum
-                | AggregateFunction::Avg
-                | AggregateFunction::Stdev
-                | AggregateFunction::Min
-                | AggregateFunction::Max
-                | AggregateFunction::First
-                | AggregateFunction::Last
-                | AggregateFunction::Var => {
+            match agg_expr.agg_func.clone().into() {
+                PartialAggregateType::Caterpillar =>
                     // optimized version of
                     if agg_expr.having.is_none() && agg_expr.groupby.is_none() {
                         eval_agg_using_partial_agg(agg_expr, context, stored_variables)?
                     } else {
                         eval_expr_many_obsdates(context, expr, stored_variables)?
-                    }
-                }
+                    },
                 _ => eval_expr_many_obsdates(context, expr, stored_variables)?,
             }
         }
@@ -1047,6 +1038,7 @@ fn calc_agg(
     match func {
         AggregateFunction::Count => naive_aggregate_funcs::count(&event_expr_vec),
         AggregateFunction::Sum => naive_aggregate_funcs::sum(&event_expr_vec),
+        AggregateFunction::Product => naive_aggregate_funcs::product(&event_expr_vec),
         AggregateFunction::Min => naive_aggregate_funcs::min(&event_expr_vec),
         AggregateFunction::Max => naive_aggregate_funcs::max(&event_expr_vec),
         AggregateFunction::Avg => naive_aggregate_funcs::mean(&event_expr_vec),

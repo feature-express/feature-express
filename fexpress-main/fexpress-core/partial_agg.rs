@@ -57,6 +57,29 @@ pub enum PartialAggregateWrapper {
     MaxConsecutiveTrue(MaxConsecutiveTrue),
 }
 
+impl Into<AggregateFunction> for PartialAggregateWrapper {
+    fn into(self) -> AggregateFunction {
+        match self {
+            PartialAggregateWrapper::Sum(_) => AggregateFunction::Sum,
+            PartialAggregateWrapper::Product(_) => AggregateFunction::Product,
+            PartialAggregateWrapper::Count(_) => AggregateFunction::Count,
+            PartialAggregateWrapper::Avg(_) => AggregateFunction::Avg,
+            PartialAggregateWrapper::Var(_) => AggregateFunction::Var,
+            PartialAggregateWrapper::StdDev(_) => AggregateFunction::Stdev,
+            PartialAggregateWrapper::Minimum(_) => AggregateFunction::Min,
+            PartialAggregateWrapper::Maximum(_) => AggregateFunction::Max,
+            PartialAggregateWrapper::First(_) => AggregateFunction::First,
+            PartialAggregateWrapper::Last(_) => AggregateFunction::Last,
+            PartialAggregateWrapper::ArgMax(_) => AggregateFunction::Argmax,
+            PartialAggregateWrapper::ArgMin(_) => AggregateFunction::Argmin,
+            PartialAggregateWrapper::Mode(_) => AggregateFunction::Mode,
+            PartialAggregateWrapper::Any(_) => AggregateFunction::Any,
+            PartialAggregateWrapper::All(_) => AggregateFunction::All,
+            PartialAggregateWrapper::MaxConsecutiveTrue(_) => AggregateFunction::MaxConsecutiveTrue
+        }
+    }
+}
+
 // implements match for pairs of variants of the same type and applies method to them
 macro_rules! gen_match_arms {
     ($enum_name:ident, $variant:ident, $method:ident) => {
@@ -73,6 +96,7 @@ impl PartialAggregateWrapper {
         match agg_func {
             AggregateFunction::Count => PartialAggregateWrapper::Count(Count::new()),
             AggregateFunction::Sum => PartialAggregateWrapper::Sum(Sum::new()),
+            AggregateFunction::Product => PartialAggregateWrapper::Product(Product::new()),
             AggregateFunction::Min => PartialAggregateWrapper::Minimum(Minimum::new()),
             AggregateFunction::Max => PartialAggregateWrapper::Maximum(Maximum::new()),
             AggregateFunction::Avg => PartialAggregateWrapper::Avg(Mean::new()),
@@ -92,7 +116,7 @@ impl PartialAggregateWrapper {
             AggregateFunction::Mode => PartialAggregateWrapper::Mode(Mode::new()),
             AggregateFunction::Any => PartialAggregateWrapper::Any(Any::new()),
             AggregateFunction::All => PartialAggregateWrapper::All(All::new()),
-            AggregateFunction::MaxConsecutiveTrue => PartialAggregateWrapper::MaxConsecutiveTrue(MaxConsecutiveTrue::new())
+            AggregateFunction::MaxConsecutiveTrue => PartialAggregateWrapper::MaxConsecutiveTrue(MaxConsecutiveTrue::new()),
         }
     }
 

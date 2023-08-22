@@ -524,6 +524,7 @@ pub enum AggrExprFunction {
 pub enum AggregateFunction {
     Count,
     Sum,
+    Product,
     Min,
     Max,
     Avg,
@@ -544,4 +545,40 @@ pub enum AggregateFunction {
     Any,
     All,
     MaxConsecutiveTrue,
+}
+
+pub enum PartialAggregateType {
+    Unimplemented, // use naive function to calculate
+    Caterpillar,   // this is a name of partial aggregate with subtract operation
+    Monoid         // standard monoid
+}
+
+impl Into<PartialAggregateType> for AggregateFunction {
+    fn into(self) -> PartialAggregateType {
+        match self {
+            AggregateFunction::Count => PartialAggregateType::Caterpillar,
+            AggregateFunction::Sum => PartialAggregateType::Caterpillar,
+            AggregateFunction::Product => PartialAggregateType::Caterpillar,
+            AggregateFunction::Min => PartialAggregateType::Caterpillar,
+            AggregateFunction::Max => PartialAggregateType::Caterpillar,
+            AggregateFunction::Avg => PartialAggregateType::Caterpillar,
+            AggregateFunction::Median => PartialAggregateType::Unimplemented,
+            AggregateFunction::Var => PartialAggregateType::Unimplemented,
+            AggregateFunction::Stdev => PartialAggregateType::Unimplemented,
+            AggregateFunction::Last => PartialAggregateType::Caterpillar,
+            AggregateFunction::Nth(_) => PartialAggregateType::Unimplemented,
+            AggregateFunction::First => PartialAggregateType::Caterpillar,
+            AggregateFunction::TimeOfLast => PartialAggregateType::Unimplemented,
+            AggregateFunction::TimeOfFirst => PartialAggregateType::Unimplemented,
+            AggregateFunction::TimeOfNext => PartialAggregateType::Unimplemented,
+            AggregateFunction::AvgDaysBetween => PartialAggregateType::Unimplemented,
+            AggregateFunction::Values => PartialAggregateType::Unimplemented,
+            AggregateFunction::Argmax => PartialAggregateType::Caterpillar,
+            AggregateFunction::Argmin => PartialAggregateType::Caterpillar,
+            AggregateFunction::Mode => PartialAggregateType::Caterpillar,
+            AggregateFunction::Any => PartialAggregateType::Caterpillar,
+            AggregateFunction::All => PartialAggregateType::Caterpillar,
+            AggregateFunction::MaxConsecutiveTrue => PartialAggregateType::Caterpillar,
+        }
+    }
 }
