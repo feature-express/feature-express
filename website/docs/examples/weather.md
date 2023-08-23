@@ -1,7 +1,3 @@
-<img src="https://feature.express/img/logo_blocky.png" width="100%"/>
-
-
-
 # Modeling timeseries data
 
 This is a basic example how to convert the data into events and create a declaration of features
@@ -18,7 +14,7 @@ import pandas as pd
 import fexpress as fx
 ```
 
-    Requirement already satisfied: fexpress in /Users/pawel/.pyenv/versions/3.9.16/envs/fexpress/lib/python3.9/site-packages (0.0.1)
+    Requirement already satisfied: fexpress in /Users/pawel/.pyenv/versions/3.9.16/envs/fexpress/lib/python3.9/site-packages (0.0.3)
 
 
     WARNING: You are using pip version 22.0.4; however, version 23.2.1 is available.
@@ -241,26 +237,26 @@ print(event_context.event_context.schema())
 
     {
       "reading": {
-        "MinTemp": "Num",
-        "WindSpeed9am": "Num",
-        "WindDir3pm": "Str",
-        "WindSpeed3pm": "Num",
-        "Temp3pm": "Num",
-        "WindDir9am": "Str",
         "RainToday": "Str",
-        "WindGustSpeed": "Num",
-        "MaxTemp": "Num",
-        "Pressure9am": "Num",
-        "Cloud9am": "Num",
-        "WindGustDir": "Str",
-        "Evaporation": "Num",
-        "Cloud3pm": "Num",
+        "Temp3pm": "Num",
         "Pressure3pm": "Num",
-        "Humidity3pm": "Num",
+        "Cloud9am": "Num",
         "Humidity9am": "Num",
-        "Rainfall": "Num",
+        "WindSpeed3pm": "Num",
+        "WindSpeed9am": "Num",
+        "MinTemp": "Num",
+        "MaxTemp": "Num",
+        "Humidity3pm": "Num",
+        "WindGustSpeed": "Num",
+        "WindGustDir": "Str",
+        "WindDir9am": "Str",
         "Sunshine": "Num",
-        "Temp9am": "Num"
+        "Evaporation": "Num",
+        "Pressure9am": "Num",
+        "Temp9am": "Num",
+        "Rainfall": "Num",
+        "WindDir3pm": "Str",
+        "Cloud3pm": "Num"
       }
     }
 
@@ -324,7 +320,7 @@ print(features.head())
     4                         66.0                            74.0   
     
        sum(Rainfall) over last 30 days  avg(WindSpeed9am) over last 5 days   
-    0                         0.000000                                 NaN  \
+    0                              NaN                                 NaN  \
     1                         5.400000                                15.6   
     2                        16.400002                                14.4   
     3                        30.000000                                15.4   
@@ -345,14 +341,14 @@ print(features.head())
     4           8              20                        5.428571   
     
        avg(Cloud3pm) over last 7 days  sum(Pressure9am) over last 3 days   
-    0                             NaN                           0.000000  \
+    0                             NaN                                NaN  \
     1                        4.714286                        3040.900146   
     2                        3.571429                        3051.399902   
     3                        5.714286                        3051.700195   
     4                        4.714286                        3054.800049   
     
        sum(Pressure3pm) over last 3 days  last(WindGustDir) over past   
-    0                           0.000000                         None  \
+    0                                NaN                         None  \
     1                        3033.399902                          NNE   
     2                        3047.399902                            N   
     3                        3042.800049                          NNE   
@@ -366,6 +362,6 @@ print(features.head())
     4                          28.6                      22.299999  
     
     [5 rows x 21 columns]
-    CPU times: user 32.3 s, sys: 335 ms, total: 32.6 s
-    Wall time: 11 s
+    CPU times: user 400 ms, sys: 41.3 ms, total: 442 ms
+    Wall time: 154 ms
 

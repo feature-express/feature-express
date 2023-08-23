@@ -1,6 +1,6 @@
 ---
-slug: feature-express-introduction
-title: Feature Engineering - Stuck Behind Tables? Break Free with FeatureExpress
+slug: feature-express-tables
+title: Feature Engineering - Stuck Behind Tables?
 authors:
   name: Paweł Jankiewicz
   title: Machine Learning Engineer, Kaggle Grandmaster
