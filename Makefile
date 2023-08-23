@@ -48,7 +48,7 @@ website:
 	cp examples/kaggle_notebooks/weather/feature-express-weather.md website/docs/examples/weather.md
 	sed -i '' '/<style scoped>/,/<\/style>/d' website/docs/examples/weather.md
 	sed -i '' 's/style="[^"]*"//g' website/docs/examples/weather.md
-	cd website && npm run build && cd build && gsutil -m rsync -r . gs://feature-express-website
+	cd website && npm run build && cd build && gsutil -m rm -r gs://feature-express-website/* && gsutil -m cp -r . gs://feature-express-website
 
 before_push:
 	cargo fmt
