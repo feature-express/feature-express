@@ -1,0 +1,44 @@
+---
+slug: feature-express-introduction
+title: Feature Engineering - Stuck Behind Tables? Break Free with FeatureExpress
+authors:
+  name: Paweł Jankiewicz
+  title: Machine Learning Engineer, Kaggle Grandmaster
+  url: https://github.com/pjankiewicz
+  image_url: https://github.com/pjankiewicz.png
+tags: [feature-engineering, feature-express, data-science, rust]
+---
+
+# Feature Engineering - Stuck Behind Tables? Break Free with FeatureExpress
+
+In the fast-paced world of data science, time series data is a treasure trove of insights waiting to be unearthed. Traditionally, handling this form of data often meant wrestling with tables and engaging in cumbersome transformations. But what if you could escape this paradigm and embrace a more dynamic and intuitive way? Enter FeatureExpress.
+
+## The Trouble with Tables
+
+Keeping time series data in tables creates a significant barrier to innovation. Whenever we want to calculate features on specific observation dates (the dates for which we are calculating the features), we find ourselves tangled in a web of transformations. Though this may be manageable with regular time series data, such as stock prices, it becomes a nightmare when dealing with irregular events, like customer transactions.
+
+### The Regular vs. Irregular Time Series Battle
+
+If your time series is predictable like a clock, adding window features and other transformations may not be too much of a challenge. However, life isn't always that simple. Many phenomena, such as customer transactions, follow no fixed pattern. Calculating reasonable features from these irregular events becomes a complex task, often resulting in imprecise or even misleading results.
+
+## The Power of Events with FeatureExpress
+
+FeatureExpress liberates you from the confines of tables by working with a stream of events instead. These events become the building blocks and source of truth for your features.
+
+### Versatility and Simplicity
+
+Unlike table-based approaches that dominate the design of many feature stores, FeatureExpress focuses on events, offering advantages like:
+
+- **Ease of Understanding**: Events are intuitive and mirror the real-world flow of information.
+- **Flexibility**: Events can be added or removed at any point, allowing for dynamic changes and exploration of "what if" scenarios.
+- **Efficiency**: Built with Rust, FeatureExpress enables high-performance in-memory processing, resulting in fast calculations and low latency.
+
+### Unleash Creativity with DSL
+
+Express your feature engineering logic using FeatureExpress's DSL, tailor-made for data scientists. From time-based JOINS to aggregation functions, you have a wide array of tools at your disposal.
+
+## Conclusion: Breaking Free from Tables
+
+While it's possible to write similar features with either events or tables, the event-based approach's appeal lies in its simplicity, flexibility, and alignment with real-world dynamics. By adopting FeatureExpress, you can transcend the limitations of table-based feature engineering, taking advantage of a system designed to accommodate complex time-based queries and various value types.
+
+FeatureExpress offers a refreshing perspective on feature engineering, providing an efficient, clear, and robust way to deal with the complexities of time series data. Embrace the future with events, and leave those cumbersome tables behind.

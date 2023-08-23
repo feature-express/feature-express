@@ -550,7 +550,7 @@ pub enum AggregateFunction {
 pub enum PartialAggregateType {
     Unimplemented, // use naive function to calculate
     Caterpillar,   // this is a name of partial aggregate with subtract operation
-    Monoid         // standard monoid
+    Monoid,        // standard monoid
 }
 
 impl Into<PartialAggregateType> for AggregateFunction {

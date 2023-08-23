@@ -295,17 +295,32 @@ pub fn max_consecutive_true(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<
 #[cfg(test)]
 mod test {
     use super::*;
-    use chrono::NaiveDateTime;
     use crate::value::ValueWithTimestamp;
+    use chrono::NaiveDateTime;
 
     #[test]
     fn test_product() {
         let v = vec![
-            ValueWithTimestamp{value: Value::Int(1), ts: NaiveDateTime::default()},
-            ValueWithTimestamp{value: Value::Int(2), ts: NaiveDateTime::default()},
-            ValueWithTimestamp{value: Value::Int(3), ts: NaiveDateTime::default()},
-            ValueWithTimestamp{value: Value::Int(4), ts: NaiveDateTime::default()},
-            ValueWithTimestamp{value: Value::Int(5), ts: NaiveDateTime::default()}
+            ValueWithTimestamp {
+                value: Value::Int(1),
+                ts: NaiveDateTime::default(),
+            },
+            ValueWithTimestamp {
+                value: Value::Int(2),
+                ts: NaiveDateTime::default(),
+            },
+            ValueWithTimestamp {
+                value: Value::Int(3),
+                ts: NaiveDateTime::default(),
+            },
+            ValueWithTimestamp {
+                value: Value::Int(4),
+                ts: NaiveDateTime::default(),
+            },
+            ValueWithTimestamp {
+                value: Value::Int(5),
+                ts: NaiveDateTime::default(),
+            },
         ];
         assert_eq!(product(&v).unwrap(), Value::Num(120.0));
     }

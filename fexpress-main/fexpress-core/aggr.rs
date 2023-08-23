@@ -6,6 +6,7 @@ use crate::ast::core::AggrExpr;
 use crate::sstring::SmallString;
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
+use std::iter::FromIterator;
 
 use crate::eval::{eval_simple_expr, extract_interval_events, EvalContext};
 use crate::event::Event;
@@ -59,6 +60,14 @@ pub fn eval_agg_using_partial_agg(
 
     let interval_events = extract_interval_events(agg, context, &all_obs_date_interval);
     let aggr_table = prepare_aggregation_input(agg, context, interval_events, stored_variables)?;
+    // TODO: use this preaggregated state
+    // let aggr_table_preaggr = BTreeMap::from_iter(aggr_table.iter().map(|(ts, vs)| {
+    //     let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
+    //     for v in vs {
+    //         partial_agg_state.update(v.aggr_eval.clone(), ts.clone())
+    //     }
+    //     (ts.clone(), partial_agg_state)
+    // }));
     let mut result = HashMap::new();
 
     let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
@@ -70,6 +79,8 @@ pub fn eval_agg_using_partial_agg(
     for (i, (obs_date, interval)) in obs_dates.iter().zip(intervals.iter()).enumerate() {
         // first initialize the aggregation table
         if i == 0 {
+            // TODO: these condition < interval.end_dt_safe() I wonder how it works with config that the observationd_Dates/events are included in the
+            // in the calculations
             for (ts, vs) in aggr_table.range(interval.start_dt_safe()..interval.end_dt_safe()) {
                 for v in vs {
                     partial_agg_state.update(v.aggr_eval.clone(), ts.clone())

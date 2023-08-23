@@ -75,7 +75,7 @@ impl Into<AggregateFunction> for PartialAggregateWrapper {
             PartialAggregateWrapper::Mode(_) => AggregateFunction::Mode,
             PartialAggregateWrapper::Any(_) => AggregateFunction::Any,
             PartialAggregateWrapper::All(_) => AggregateFunction::All,
-            PartialAggregateWrapper::MaxConsecutiveTrue(_) => AggregateFunction::MaxConsecutiveTrue
+            PartialAggregateWrapper::MaxConsecutiveTrue(_) => AggregateFunction::MaxConsecutiveTrue,
         }
     }
 }

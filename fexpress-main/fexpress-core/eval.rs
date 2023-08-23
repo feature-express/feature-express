@@ -9,7 +9,9 @@ use itertools::Itertools;
 use vec1::Vec1;
 
 use crate::aggr::eval_agg_using_partial_agg;
-use crate::ast::core::{AggrExpr, AggregateFunction, BExpr, Expr, ExprFunc, HavingExprType, PartialAggregateType};
+use crate::ast::core::{
+    AggrExpr, AggregateFunction, BExpr, Expr, ExprFunc, HavingExprType, PartialAggregateType,
+};
 use crate::evaluation::date;
 use crate::evaluation::date::{
     eval_current_date, eval_current_time, eval_date_add, eval_date_part, eval_date_sub, eval_day,
@@ -94,12 +96,14 @@ pub fn eval_context_dispatcher(
         Expr::Aggr(ref agg_expr) => {
             match agg_expr.agg_func.clone().into() {
                 PartialAggregateType::Caterpillar =>
-                    // optimized version of
+                // optimized version of
+                {
                     if agg_expr.having.is_none() && agg_expr.groupby.is_none() {
                         eval_agg_using_partial_agg(agg_expr, context, stored_variables)?
                     } else {
                         eval_expr_many_obsdates(context, expr, stored_variables)?
-                    },
+                    }
+                }
                 _ => eval_expr_many_obsdates(context, expr, stored_variables)?,
             }
         }
@@ -115,7 +119,7 @@ fn eval_expr_many_obsdates(
     stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
 ) -> Result<HashMap<NaiveDateTime, Value>> {
     let mut result = HashMap::new();
-    let query_config = QueryConfig::default();
+    let query_config = context.query_config;
     for obs_date in &context
         .obs_date
         .as_ref()
@@ -139,7 +143,7 @@ fn eval_expr_many_obsdates(
 
         let context = EvalContext {
             event_index: context.event_index,
-            query_config: Some(&query_config),
+            query_config: context.query_config,
             event_query_config: context.event_query_config.clone(),
             entities: context.entities.clone(),
             experiment_id: context.experiment_id.clone(),
