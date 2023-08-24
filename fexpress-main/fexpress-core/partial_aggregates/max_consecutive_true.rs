@@ -95,6 +95,38 @@ impl PartialAggregate for MaxConsecutiveTrue {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for segment in other.state.iter() {
+            match self.state.last_mut() {
+                Some(last_segment) if last_segment.value == segment.value => {
+                    last_segment.end_timestamp = segment.end_timestamp;
+                    last_segment.length += segment.length;
+                }
+                _ => {
+                    self.state.push(segment.clone());
+                }
+            }
+
+            if segment.value {
+                self.max_consecutive = self.max_consecutive.max(self.state.last().unwrap().length);
+            }
+        }
+
+        if self.state.len() > 1 {
+            let segment_size = self.state.len();
+            let last_two = &mut self.state[segment_size - 2..];
+            if last_two[0].value && last_two[1].value {
+                let new_len = last_two[0].length + last_two[1].length;
+                last_two[0].length = new_len;
+                last_two[0].end_timestamp = last_two[1].end_timestamp;
+                self.state.pop();
+                self.max_consecutive = self.max_consecutive.max(new_len);
+            }
+        }
+
+        self.count += other.count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.max_consecutive
     }

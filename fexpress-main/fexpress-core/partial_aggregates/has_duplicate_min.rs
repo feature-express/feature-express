@@ -62,6 +62,24 @@ impl PartialAggregate for HasDuplicateMin {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        match (self.min_value, other.min_value) {
+            (Some(self_min), Some(other_min)) => {
+                if self_min > other_min {
+                    self.min_value = other.min_value;
+                    self.min_count = other.min_count;
+                } else if other_min == self_min {
+                    self.min_count += other.min_count;
+                }
+            }
+            (None, Some(_)) => {
+                self.min_value = other.min_value;
+                self.min_count = other.min_count;
+            }
+            _ => {}
+        }
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.min_count >= 2
     }

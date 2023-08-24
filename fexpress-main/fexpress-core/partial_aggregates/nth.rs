@@ -65,6 +65,21 @@ impl PartialAggregate for Nth {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for other_tuple in &other.k_oldest_tuples {
+            if let Some(back) = self.k_oldest_tuples.back() {
+                if back.0 > other_tuple.0 {
+                    continue;
+                }
+            }
+
+            self.k_oldest_tuples.push_back(*other_tuple);
+            if self.k_oldest_tuples.len() > self.k + 1 {
+                self.k_oldest_tuples.pop_front();
+            }
+        }
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.k_oldest_tuples.len() <= self.k {
             None

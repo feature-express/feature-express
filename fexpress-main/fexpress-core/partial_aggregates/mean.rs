@@ -31,6 +31,11 @@ impl PartialAggregate for Mean {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.count += other.count;
+        self.sum += other.sum;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count == 0 {
             None

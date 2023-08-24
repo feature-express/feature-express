@@ -30,6 +30,11 @@ impl PartialAggregate for RootMeanSquare {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.count += other.count;
+        self.sum_of_squares += other.sum_of_squares;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count == 0 {
             None

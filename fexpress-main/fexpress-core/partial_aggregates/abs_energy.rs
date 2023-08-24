@@ -30,6 +30,11 @@ impl PartialAggregate for AbsEnergy {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.count += other.count;
+        self.state += other.state;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count == 0 {
             None

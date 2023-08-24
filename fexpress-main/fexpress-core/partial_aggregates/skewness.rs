@@ -58,6 +58,29 @@ impl PartialAggregate for Skewness {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        let total_count = self.count + other.count;
+        let delta = other.mean - self.mean;
+        let delta2 = delta * delta;
+        let delta3 = delta2 * delta;
+        let total_count_FLOAT = total_count as FLOAT;
+        let mean =
+            (self.mean * self.count as FLOAT + other.mean * other.count as FLOAT) / total_count_FLOAT;
+        let m2 =
+            self.m2 + other.m2 + delta2 * self.count as FLOAT * other.count as FLOAT / total_count_FLOAT;
+        let m3 = self.m3
+            + other.m3
+            + delta3 * self.count as FLOAT * (self.count - 1) as FLOAT * other.count as FLOAT
+            / (total_count_FLOAT * (total_count - 1) as FLOAT)
+            - 3.0 * delta * (self.count as FLOAT * other.m2 - other.count as FLOAT * self.m2)
+            / total_count_FLOAT;
+
+        self.count = total_count;
+        self.mean = mean;
+        self.m2 = m2;
+        self.m3 = m3;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count < 3 {
             0.0

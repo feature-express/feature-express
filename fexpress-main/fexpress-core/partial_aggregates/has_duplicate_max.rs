@@ -62,6 +62,24 @@ impl PartialAggregate for HasDuplicateMax {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        match (self.max_value, other.max_value) {
+            (Some(self_max), Some(other_max)) => {
+                if self_max < other_max {
+                    self.max_value = other.max_value;
+                    self.max_count = other.max_count;
+                } else if other_max == self_max {
+                    self.max_count += other.max_count;
+                }
+            }
+            (None, Some(_)) => {
+                self.max_value = other.max_value;
+                self.max_count = other.max_count;
+            }
+            _ => {}
+        }
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.max_count >= 2
     }

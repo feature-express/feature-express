@@ -29,6 +29,10 @@ impl PartialAggregate for AbsoluteSumOfChanges {
         panic!("Merging is not supported for AbsoluteSumOfChanges");
     }
 
+    fn merge_inplace(&self, _other: &Self) {
+        panic!("Merging is not supported for AbsoluteSumOfChanges");
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.state
     }

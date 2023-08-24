@@ -54,6 +54,17 @@ where
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (key, inner_map) in other.state.iter() {
+            let merged_inner_map = self.state.entry(*key).or_insert_with(BTreeMap::new);
+            for (ts, &count) in inner_map.iter() {
+                *merged_inner_map.entry(ts.clone()).or_insert(0) += count;
+            }
+        }
+
+        self.count += other.count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.state
             .keys()

@@ -26,6 +26,10 @@ impl PartialAggregate for Count {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.count += other.count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.count
     }

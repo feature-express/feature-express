@@ -39,6 +39,14 @@ impl PartialAggregate for Maximum {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (key, val) in other.state.iter() {
+            *self.state.entry(*key).or_insert(0) += val;
+        }
+
+        self.count += other.count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.state.keys().last().map(|&k| k.into_inner())
     }

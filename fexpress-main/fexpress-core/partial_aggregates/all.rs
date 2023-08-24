@@ -33,6 +33,11 @@ impl PartialAggregate for All {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.true_count += other.true_count;
+        self.false_count += other.false_count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         // Return true only if there are no false values
         self.false_count == 0

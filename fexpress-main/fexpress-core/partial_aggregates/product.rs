@@ -31,6 +31,11 @@ impl PartialAggregate for Product {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.count += other.count;
+        self.product *= other.product;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count == 0 {
             None

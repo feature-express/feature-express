@@ -26,6 +26,13 @@ impl PartialAggregate for StandardDeviation {
         self.total_values += 1;
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (key, value) in other.freq_map.iter() {
+            *self.freq_map.entry(*key).or_insert(0) += *value;
+        }
+        self.total_values += other.total_values;
+    }
+
     fn merge(&self, other: &Self) -> Self {
         let mut merged = self.freq_map.clone();
 

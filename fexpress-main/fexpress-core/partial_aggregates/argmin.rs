@@ -51,6 +51,17 @@ where
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (key, val) in other.state.iter() {
+            self.state
+                .entry(*key)
+                .or_insert_with(Vec::new)
+                .extend(val.clone());
+        }
+
+        self.count += other.count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.state.values().next().and_then(|v| v.first().cloned()) // Only change from ArgMax is here
     }

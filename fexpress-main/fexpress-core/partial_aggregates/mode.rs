@@ -54,6 +54,18 @@ where
         merged
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (value, count) in &other.values {
+            let merged_count = self.values.entry(value.clone()).or_insert(0);
+            *merged_count += count;
+
+            if *merged_count > self.max_count {
+                self.max_count = *merged_count;
+                self.mode = Some(value.clone());
+            }
+        }
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.mode.clone()
     }

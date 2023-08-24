@@ -51,6 +51,15 @@ impl PartialAggregate for AverageTimeBetween {
         merged
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        if let (Some(merged_end_time), Some(other_start_time)) = (self.end_time, other.start_time) {
+            let time_diff = other_start_time - merged_end_time;
+            self.sum_time_diff += time_diff;
+            self.end_time = other.end_time;
+            self.count += other.count - 1;
+        }
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count < 2 {
             None

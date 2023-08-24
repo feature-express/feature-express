@@ -44,6 +44,15 @@ impl PartialAggregate for OnlineStandardDeviation {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        let total_count = self.count + other.count;
+        let delta_mean = other.mean - self.mean;
+        self.mean += delta_mean * (other.count as FLOAT / total_count as FLOAT);
+        self.sum_squared_diffs += other.sum_squared_diffs
+            + delta_mean * delta_mean * (self.count * other.count) as FLOAT / total_count as FLOAT;
+        self.count = total_count;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count > 1 {
             Some((self.sum_squared_diffs / (self.count as FLOAT - 1.0)).sqrt())

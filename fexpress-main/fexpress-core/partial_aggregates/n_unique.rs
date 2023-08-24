@@ -39,6 +39,12 @@ where
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (key, val) in other.state.iter() {
+            *self.state.entry(key.clone()).or_insert(0) += val;
+        }
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.state.keys().count()
     }

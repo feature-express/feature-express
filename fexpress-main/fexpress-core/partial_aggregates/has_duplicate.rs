@@ -47,6 +47,19 @@ impl PartialAggregate for HasDuplicate {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        let mut any_duplicate = false;
+        for (value, count) in other.value_counts.iter() {
+            let entry = self.value_counts.entry(value.to_string()).or_insert(0);
+            *entry += count;
+            if *entry > 1 {
+                any_duplicate = true;
+            }
+        }
+
+        self.any_duplicate = any_duplicate || self.any_duplicate || other.any_duplicate;
+    }
+
     fn evaluate(&self) -> Self::Output {
         self.any_duplicate
     }

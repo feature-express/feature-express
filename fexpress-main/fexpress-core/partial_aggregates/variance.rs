@@ -39,6 +39,14 @@ impl PartialAggregate for Variance {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        for (key, value) in other.freq_map.iter() {
+            *self.freq_map.entry(*key).or_insert(0) += *value;
+        }
+
+        self.total_values += other.total_values;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.total_values < 2 {
             return None;

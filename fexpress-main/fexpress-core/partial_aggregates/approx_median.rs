@@ -52,6 +52,11 @@ impl PartialAggregate for ApproxMedian {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.reservoir.extend(other.reservoir.iter().cloned());
+        self.num_samples += other.num_samples;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.reservoir.is_empty() {
             return None;

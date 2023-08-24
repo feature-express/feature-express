@@ -28,6 +28,7 @@ pub trait PartialAggregate {
     fn new() -> Self;
     fn update(&mut self, input: Self::Input);
     fn merge(&self, other: &Self) -> Self;
+    fn merge_inplace(&mut self, other: &Self);
     fn evaluate(&self) -> Self::Output;
 }
 
@@ -159,6 +160,28 @@ impl PartialAggregateWrapper {
             (PartialAggregateWrapper::Any(a), PartialAggregateWrapper::Any(b)) => PartialAggregateWrapper::Any(a.merge(b)),
             (PartialAggregateWrapper::All(a), PartialAggregateWrapper::All(b)) => PartialAggregateWrapper::All(a.merge(b)),
             (PartialAggregateWrapper::MaxConsecutiveTrue(a), PartialAggregateWrapper::MaxConsecutiveTrue(b)) => PartialAggregateWrapper::MaxConsecutiveTrue(a.merge(b)),
+            _ => panic!("Cannot merge Partial aggregates of different types")
+        }
+    }
+
+    pub fn merge_inplace(&mut self, other: &Self) {
+        match (self, other) {
+            (PartialAggregateWrapper::Sum(a), PartialAggregateWrapper::Sum(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Product(a), PartialAggregateWrapper::Product(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Count(a), PartialAggregateWrapper::Count(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Avg(a), PartialAggregateWrapper::Avg(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Var(a), PartialAggregateWrapper::Var(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::StdDev(a), PartialAggregateWrapper::StdDev(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Minimum(a), PartialAggregateWrapper::Minimum(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Maximum(a), PartialAggregateWrapper::Maximum(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::First(a), PartialAggregateWrapper::First(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Last(a), PartialAggregateWrapper::Last(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::ArgMin(a), PartialAggregateWrapper::ArgMin(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::ArgMax(a), PartialAggregateWrapper::ArgMax(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Mode(a), PartialAggregateWrapper::Mode(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::Any(a), PartialAggregateWrapper::Any(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::All(a), PartialAggregateWrapper::All(b)) => a.merge_inplace(b),
+            (PartialAggregateWrapper::MaxConsecutiveTrue(a), PartialAggregateWrapper::MaxConsecutiveTrue(b)) => a.merge_inplace(b),
             _ => panic!("Cannot merge Partial aggregates of different types")
         }
     }

@@ -42,6 +42,14 @@ impl PartialAggregate for Kurtosis {
         }
     }
 
+    fn merge_inplace(&mut self, other: &Self) {
+        self.count += other.count;
+        self.sum += other.sum;
+        self.sum_sq += other.sum_sq;
+        self.sum_cub += other.sum_cub;
+        self.sum_quart += other.sum_quart;
+    }
+
     fn evaluate(&self) -> Self::Output {
         if self.count < 4 {
             None
