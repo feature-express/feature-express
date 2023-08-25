@@ -34,6 +34,7 @@ pub mod event_index;
 pub mod event_store;
 pub mod feature_matrix;
 mod features;
+pub mod features_rewrite;
 pub mod impls;
 pub mod interval;
 pub mod naive_aggregate_funcs;

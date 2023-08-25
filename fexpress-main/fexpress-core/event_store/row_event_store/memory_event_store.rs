@@ -769,6 +769,11 @@ impl EventStore for MemoryEventStore {
         attr_value_types.get(name).cloned()
     }
 
+    fn get_attribute_value_types(&self) -> HashMap<AttributeName, HashSet<ValueType>> {
+        let attr_value_types = self.attr_value_types.read().unwrap();
+        attr_value_types.clone()
+    }
+
     fn n_entities(&self) -> usize {
         let sm = self.sm.read().unwrap();
         sm.len()

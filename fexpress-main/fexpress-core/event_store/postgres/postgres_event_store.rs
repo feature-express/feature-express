@@ -558,6 +558,10 @@ impl EventStore for PostgresEventStore {
         // Some(value_types)
     }
 
+    fn get_attribute_value_types(&self) -> HashMap<AttributeName, HashSet<ValueType>> {
+        todo!()
+    }
+
     fn n_entities(&self) -> usize {
         unimplemented!()
         // let mut client = self.client.write().unwrap();

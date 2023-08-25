@@ -96,6 +96,9 @@ pub trait EventStore {
     /// Get attribute value types across all event types
     fn get_attribute_value_type(&self, name: &AttributeName) -> Option<HashSet<ValueType>>;
 
+    /// Get full hashmap of attributes
+    fn get_attribute_value_types(&self) -> HashMap<AttributeName, HashSet<ValueType>>;
+
     /// Number of entities
     fn n_entities(&self) -> usize;
 
