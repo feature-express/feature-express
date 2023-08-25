@@ -37,7 +37,7 @@ python_publish:
 	cd fexpress-py && maturin publish
 
 python_profile:
-	cd examples/kaggle_notebooks/weather && sudo py-spy record -n -o profile.svg -- python feature-express-weather.py
+	cd examples/kaggle_notebooks/weather && py-spy record -n -o profile.svg -- python feature-express-weather.py
 
 website:
 	echo "Pulling the notebcd ook from Kaggle"
