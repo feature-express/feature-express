@@ -31,7 +31,7 @@ impl AttributeKey {
     pub fn to_kstring(&self) -> SmallString {
         match self {
             AttributeKey::Single(s) => s.clone(),
-            AttributeKey::Nested(v) => v.iter().join(".").into(),
+            AttributeKey::Nested(v) => v.iter().join("."),
         }
     }
 }
@@ -51,9 +51,9 @@ impl FromStr for AttributeKey {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = s.split('.').map(|x| x.to_string()).collect_vec();
         if parts.len() == 1 {
-            Ok(AttributeKey::Single(SmallString::from(
+            Ok(AttributeKey::Single(
                 parts[0].to_string(),
-            )))
+            ))
         } else if parts.len() > 1 {
             let mut parts_iter = parts.into_iter();
             let first = parts_iter
@@ -320,6 +320,7 @@ pub struct Entity {
     pub id: SmallString,
 }
 
+#[allow(clippy::derive_ord_xor_partial_ord)]
 impl Ord for Entity {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.typ.cmp(&other.typ) {

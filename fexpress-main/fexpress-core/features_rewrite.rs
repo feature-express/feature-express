@@ -52,7 +52,7 @@ impl ExprVisitor for UntypedAttributeRewriteVisitor {
 /// rewrites untyped attributes to
 pub fn rewrite_untyped_attributes(
     features: &mut Features,
-    event_store: &mut EventStore,
+    event_store: &mut dyn EventStore,
 ) -> Result<()> {
     let attribute_value_types = event_store.get_attribute_value_types();
     let mut visitor = UntypedAttributeRewriteVisitor {

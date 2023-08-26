@@ -1,5 +1,4 @@
 mod chunk_benchmark;
-mod nba_column_store;
 
 extern crate fexpress_core;
 

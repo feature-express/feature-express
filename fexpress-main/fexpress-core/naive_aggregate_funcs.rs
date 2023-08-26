@@ -8,7 +8,7 @@ use crate::value::{Value, ValueType, ValueWithTimestamp};
 use anyhow::{anyhow, bail, Context, Error, Result};
 
 pub fn nth(
-    event_expr_vec: &Vec<ValueWithTimestamp>,
+    event_expr_vec: &[ValueWithTimestamp],
     stored_variables: &HashMap<String, HashMap<Timestamp, Value>>,
     n_expr: &BExpr,
 ) -> Result<Value> {
@@ -37,7 +37,7 @@ pub fn nth(
     }
 }
 
-pub fn last(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn last(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = event_expr_vec.last();
     if let Some(v) = v {
         Ok(v.value.clone())
@@ -46,7 +46,7 @@ pub fn last(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, E
     }
 }
 
-pub fn stdev(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn stdev(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = eval::extract_num_vector(event_expr_vec);
     if !v.is_empty() {
         Ok(Value::Num(v.std_dev() as FLOAT))
@@ -55,7 +55,7 @@ pub fn stdev(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, 
     }
 }
 
-pub fn var(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn var(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = eval::extract_num_vector(event_expr_vec);
     if !v.is_empty() {
         Ok(Value::Num(v.var() as FLOAT))
@@ -64,7 +64,7 @@ pub fn var(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Er
     }
 }
 
-pub fn median(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn median(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = eval::extract_num_vector(event_expr_vec);
     if !v.is_empty() {
         Ok(Value::Num(v.median() as FLOAT))
@@ -73,7 +73,7 @@ pub fn median(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value,
     }
 }
 
-pub fn mean(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn mean(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = eval::extract_num_vector(event_expr_vec);
     if !v.is_empty() {
         Ok(Value::Num(v.mean() as FLOAT))
@@ -82,7 +82,7 @@ pub fn mean(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, E
     }
 }
 
-pub fn max(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value> {
+pub fn max(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value> {
     if !event_expr_vec.is_empty() {
         eval::calc_mixed_agg(
             event_expr_vec,
@@ -95,7 +95,7 @@ pub fn max(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value> {
     }
 }
 
-pub fn min(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value> {
+pub fn min(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value> {
     if !event_expr_vec.is_empty() {
         eval::calc_mixed_agg(
             event_expr_vec,
@@ -108,7 +108,7 @@ pub fn min(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value> {
     }
 }
 
-pub fn sum(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn sum(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = eval::extract_num_vector(event_expr_vec);
     if !v.is_empty() {
         Ok(Value::Num(v.sum() as FLOAT))
@@ -117,7 +117,7 @@ pub fn sum(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Er
     }
 }
 
-pub fn product(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn product(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     let v = eval::extract_num_vector(event_expr_vec);
     if !v.is_empty() {
         Ok(Value::Num(v.iter().fold(1.0, |acc, &x| acc * x) as FLOAT))
@@ -126,11 +126,11 @@ pub fn product(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value
     }
 }
 
-pub fn count(event_expr_vec: &Vec<ValueWithTimestamp>) -> anyhow::Result<Value, Error> {
+pub fn count(event_expr_vec: &[ValueWithTimestamp]) -> anyhow::Result<Value, Error> {
     Ok(Value::Int(event_expr_vec.len() as INT))
 }
 
-pub fn time_of_last(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn time_of_last(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     for el in event_expr_vec.iter().rev() {
         if let (Value::Bool(v), ts) = (el.clone().value, el.ts) {
             if v {
@@ -141,7 +141,7 @@ pub fn time_of_last(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
     Ok(Value::None)
 }
 
-pub fn first(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value, Error> {
+pub fn first(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value, Error> {
     let v = event_expr_vec.first();
     if let Some(v) = v {
         Ok(v.value.clone())
@@ -150,7 +150,7 @@ pub fn first(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value, Error> {
     }
 }
 
-pub fn time_of_first(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn time_of_first(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     for el in event_expr_vec {
         if let (Value::Bool(v), ts) = (&el.value, el.ts) {
             if *v {
@@ -161,7 +161,7 @@ pub fn time_of_first(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> 
     Ok(Value::None)
 }
 
-pub fn values(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value, Error> {
+pub fn values(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value, Error> {
     let vec_type = eval::classify_expr_result_vector(&event_expr_vec);
     match vec_type {
         ValueVectorType::SingleType(_type) => match _type {
@@ -177,7 +177,7 @@ pub fn values(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value, Error> 
     }
 }
 
-pub fn avg_days_between(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn avg_days_between(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     if event_expr_vec.len() < 2 {
         return Ok(Value::None);
     }
@@ -201,7 +201,7 @@ pub fn avg_days_between(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Valu
     Ok(Value::Num(avg))
 }
 
-pub fn time_of_next(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn time_of_next(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     for el in event_expr_vec {
         if let (Value::Bool(v), ts) = (&el.value, el.ts) {
             if *v {
@@ -213,7 +213,7 @@ pub fn time_of_next(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
 }
 
 // argmax - when did the first maximum happen
-pub fn argmax(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn argmax(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     if let Some(max_val) = event_expr_vec
         .iter()
         .max_by(|a, b| a.value.partial_cmp(&b.value).unwrap())
@@ -224,7 +224,7 @@ pub fn argmax(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
 }
 
 // argmin - when did the first minimum happen
-pub fn argmin(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn argmin(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     if let Some(min_val) = event_expr_vec
         .iter()
         .min_by(|a, b| a.value.partial_cmp(&b.value).unwrap())
@@ -235,7 +235,7 @@ pub fn argmin(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
 }
 
 // mode - generic function most common value
-pub fn mode(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn mode(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     let mut map: HashMap<Value, INT> = HashMap::new();
     for el in event_expr_vec {
         *map.entry(el.value.clone()).or_insert(0) += 1;
@@ -247,7 +247,7 @@ pub fn mode(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
 }
 
 // any - checks if any value is true (Value::Bool(bool_value))
-pub fn any(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn any(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     for el in event_expr_vec {
         if let Value::Bool(v) = el.value {
             if v {
@@ -259,7 +259,7 @@ pub fn any(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
 }
 
 // all - checks if all values are true (Value::Bool(bool_value))
-pub fn all(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn all(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     for el in event_expr_vec {
         if let Value::Bool(v) = el.value {
             if !v {
@@ -271,7 +271,7 @@ pub fn all(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
 }
 
 // maxconsecutivetrue - counts the maximum number of consecutive true values
-pub fn max_consecutive_true(event_expr_vec: &Vec<ValueWithTimestamp>) -> Result<Value> {
+pub fn max_consecutive_true(event_expr_vec: &[ValueWithTimestamp]) -> Result<Value> {
     let mut max_count = 0;
     let mut current_count = 0;
     for el in event_expr_vec {

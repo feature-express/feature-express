@@ -640,7 +640,7 @@ impl NewInterval {
                 let stored_variables = HashMap::new();
                 let context = EvalContext {
                     obs_time: Some(ObservationTime {
-                        datetime: dt.clone(),
+                        datetime: *dt,
                         event_id: None,
                     }),
                     ..Default::default()

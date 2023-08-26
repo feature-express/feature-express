@@ -496,21 +496,18 @@ pub fn parse_interval(pair: Pair<Rule>) -> Result<NewInterval> {
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::direction)
                     .with_context(|| format!("Cannot parse interval {:?}", pair))?
                     .as_str(),
-            )
-            .unwrap(),
+            ).map_err(|e| anyhow!("Cannot parse direction: {:?}", e))?,
             int: usize::from_str(
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::integer)
                     .with_context(|| format!("Cannot parse interval {:?}", pair))?
                     .as_str(),
-            )
-            .unwrap(),
+            ).map_err(|e| anyhow!("Cannot parse int: {:?}", e))?,
             unit: Unit::from_str(
                 extract_rule_from_pairs(pair.clone().into_inner(), Rule::unit)
                     .with_context(|| format!("Cannot parse interval {:?}", pair))?
                     .as_str()
                     .trim(),
-            )
-            .unwrap(),
+            ).map_err(|e| anyhow!("Cannot parse unit {:?}", e))?,
         }),
         Rule::direction_only => {
             let v = pair.as_str().to_ascii_lowercase();
@@ -652,7 +649,7 @@ pub fn parse_having_expr(pairs: Pairs<Rule>) -> Expr {
         .next()
         .map(|pair| pair.into_inner())
         .map(generate_ast)
-        .unwrap();
+        .unwrap_or_else(|| Expr::ParsingError(format!("Problem extracting having expression {:?}", pairs)));
     Expr::Having(HavingExpr {
         typ: min_or_max,
         expr: Box::new(expr),

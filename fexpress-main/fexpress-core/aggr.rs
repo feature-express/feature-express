@@ -63,9 +63,9 @@ pub fn eval_agg_using_partial_agg(
     let aggr_table_preaggr = BTreeMap::from_iter(aggr_table.iter().map(|(ts, vs)| {
         let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
         for v in vs {
-            partial_agg_state.update(v.aggr_eval.clone(), ts.clone())
+            partial_agg_state.update(v.aggr_eval.clone(), *ts)
         }
-        (ts.clone(), partial_agg_state)
+        (*ts, partial_agg_state)
     }));
     let mut result = HashMap::new();
 

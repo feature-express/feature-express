@@ -1,5 +1,3 @@
-use petgraph::visit::Walker;
-
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
@@ -63,7 +61,7 @@ impl<N: Eq + Clone + std::hash::Hash + Debug> WeightedDirectedGraph<N> {
     fn calculate_immediate_dependents_depth(
         &self,
         node_index: usize,
-        depths: &Vec<Option<usize>>,
+        depths: &[Option<usize>],
     ) -> usize {
         let mut max_immediate_dependents_depth = 0;
         for &next_node_index in &self.edges[node_index] {

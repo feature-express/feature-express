@@ -85,9 +85,5 @@ name = "generate_json_schemas"
 path = "fexpress-core/bin/generate_json_schemas.rs"
 
 [[bin]]
-name = "nba_column_store"
-path = "fexpress-core/bin/nba_column_store.rs"
-
-[[bin]]
 name = "chunk_benchmark"
 path = "fexpress-core/bin/chunk_benchmark.rs"

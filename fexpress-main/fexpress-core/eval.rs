@@ -127,16 +127,10 @@ fn eval_expr_many_obsdates(
         .inner
     {
         let event = if let Some(event_id) = &obs_date.event_id {
-            if let Some(event) = context
-                .event_index
-                .ok_or(anyhow!("index needed"))?
-                .event_store
-                .get_event_by_id(&event_id)
-            {
-                Some(event)
-            } else {
-                None
-            }
+            context.event_index
+                   .ok_or(anyhow!("index needed"))?
+                   .event_store
+                   .get_event_by_id(event_id)
         } else {
             None
         };
@@ -149,7 +143,7 @@ fn eval_expr_many_obsdates(
             experiment_id: context.experiment_id.clone(),
             obs_time: Some(obs_date.clone()),
             obs_date: Some(ObsDate {
-                inner: Vec1::new((*obs_date).clone().into()),
+                inner: Vec1::new((*obs_date).clone()),
             }),
             event_types: vec![],
             event: event.clone(),
@@ -261,13 +255,13 @@ pub fn eval_simple_expr(
         // TODO: tere should be attribute provider
         Expr::EventType => Ok(Value::Str(event_with_context?.event_type.0.clone())),
         Expr::EventTime => Ok(Value::DateTime(event_with_context?.event_time)),
-        Expr::EventId => Ok(Value::Str(SmallString::from(
+        Expr::EventId => Ok(Value::Str(
             event_with_context?
                 .event_id
                 .clone()
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "".into()),
-        ))),
+        )),
         Expr::ObservationDate => Ok(Value::DateTime(
             context_with_context?
                 .obs_time
@@ -531,7 +525,7 @@ fn evaluate_context_attribute(
         )?;
         if first_element == "entities" {
             let entity_type = EntityType(second_element.clone());
-            let eval_context = context.with_context(|| format!("Context needed to evaluate context attributes {:?} when evaluating expression {:?}", attribute.clone(), expr))?;
+            let eval_context = context.with_context(|| format!("Context needed to evaluate context attributes {:?} when evaluating expression {:?}", attribute, expr))?;
             let entity_id = eval_context
                 .entities
                 .as_ref()
@@ -550,7 +544,7 @@ fn evaluate_context_attribute(
     let eval_context = context.with_context(|| {
         format!(
             "Context needed to evaluate context attributes {:?} when evaluating expression {:?}",
-            attribute.clone(),
+            attribute,
             expr
         )
     })?;
@@ -573,11 +567,11 @@ fn evaluate_context_attribute(
     // mind that this is not the currently evaluated event but the context event that the observation date is attached to
     let context_event = eval_context.event_on_obs_date.as_ref().ok_or(anyhow!(
         "Context needed to evaluate context attributes {:?} when evaluating expression {:?}",
-        attribute.clone(),
+        attribute,
         expr
     ))?;
     Ok(evaluate_attribute_key(
-        Some(&context_event),
+        Some(context_event),
         attribute,
         eval_context,
         stored_variables,
@@ -1077,7 +1071,7 @@ pub enum ValueVectorType {
     SingleType(ValueType),
 }
 
-pub fn extract_num_vector(event_expr_vec: &Vec<ValueWithTimestamp>) -> Vec<FLOAT> {
+pub fn extract_num_vector(event_expr_vec: &[ValueWithTimestamp]) -> Vec<FLOAT> {
     event_expr_vec
         .iter()
         .map(|v| extract_inner_value(&(v.value)))
@@ -1106,19 +1100,19 @@ fn extract_inner_value(x: &Value) -> FLOAT {
     }
 }
 
-pub fn extract_str_vector(event_expr_vec: &Vec<ValueWithTimestamp>) -> Vec<SmallString> {
+pub fn extract_str_vector(event_expr_vec: &[ValueWithTimestamp]) -> Vec<SmallString> {
     event_expr_vec
         .iter()
         .filter_map(|x| match &x.value {
             Value::Str(s) => Some(s.clone()),
-            Value::Date(d) => Some(SmallString::from(d.to_string())),
-            Value::DateTime(d) => Some(SmallString::from(d.to_string())),
+            Value::Date(d) => Some(d.to_string()),
+            Value::DateTime(d) => Some(d.to_string()),
             _ => None,
         })
         .collect()
 }
 
-pub fn extract_dt_vector(event_expr_vec: &Vec<ValueWithTimestamp>) -> Vec<NaiveDateTime> {
+pub fn extract_dt_vector(event_expr_vec: &[ValueWithTimestamp]) -> Vec<NaiveDateTime> {
     event_expr_vec
         .iter()
         .filter_map(|x| match &x.value {
@@ -1155,12 +1149,12 @@ pub fn classify_expr_result_vector(v: &[ValueWithTimestamp]) -> ValueVectorType 
 /// and classify it. Aggregation is only possible if the results are of a single type excluding
 /// None.
 pub fn calc_mixed_agg(
-    event_expr_vec: &Vec<ValueWithTimestamp>,
+    event_expr_vec: &[ValueWithTimestamp],
     num_agg: fn(Vec<FLOAT>) -> Result<FLOAT>,
     str_agg: fn(Vec<SmallString>) -> Result<SmallString>,
     dt_agg: fn(Vec<NaiveDateTime>) -> Result<NaiveDateTime>,
 ) -> Result<Value> {
-    let vec_type = classify_expr_result_vector(&event_expr_vec);
+    let vec_type = classify_expr_result_vector(event_expr_vec);
     match vec_type {
         ValueVectorType::None => Ok(Value::None),
         ValueVectorType::Mixed => Ok(Value::None),
