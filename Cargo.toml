@@ -1,2 +1,8 @@
 [workspace]
 members = ["fexpress-main", "fexpress-py"]
+
+[profile.release]
+lto = "fat"
+#codegen-units = 1
+panic = "abort"
+opt-level = 3
