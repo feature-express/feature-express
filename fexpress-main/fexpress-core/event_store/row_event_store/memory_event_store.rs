@@ -336,10 +336,9 @@ impl MemoryEventStore {
         Ok(events)
     }
 
-    fn get_events_by_keys(&self, keys: Vec<DefaultKey>) -> Vec<Arc<Event>> {
-        let sm = self.sm.read().unwrap();
+    fn get_events_by_keys(&self, sm_ref: &SlotMap<DefaultKey, Arc<Event>>, keys: Vec<DefaultKey>) -> Vec<Arc<Event>> {
         keys.iter()
-            .filter_map(|&key| sm.get(key).cloned())
+            .filter_map(|&key| sm_ref.get(key).cloned())
             .collect()
     }
 
@@ -455,7 +454,6 @@ impl EventStore for MemoryEventStore {
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
         // extract without experiment
         let index_by_entity_event_type_ts = self.index_by_event_type_entity_ts.read().unwrap();
-
         let sm = self.sm.read().unwrap(); // Lock once here
         let sm_ref = &*sm;
         // here we are querying the entity index one entity by one entity
@@ -677,6 +675,8 @@ impl EventStore for MemoryEventStore {
         _query_config: &QueryConfig,
         interval: Option<&NaiveDateTimeInterval>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
+        let sm = self.sm.read().unwrap();
+        let sm_ref = &*sm;
         let index_by_event_type_entity_ts = self.index_by_event_type_entity_ts.read().unwrap();
 
         let mut timestamp_event_map = BTreeMap::new();
@@ -694,7 +694,7 @@ impl EventStore for MemoryEventStore {
                     keys.extend(treemap.values().flat_map(|key_set| key_set.iter().cloned()));
                 }
 
-                let events = self.get_events_by_keys(keys);
+                let events = self.get_events_by_keys(sm_ref, keys);
                 for event in events {
                     timestamp_event_map
                         .entry(event.event_time)
@@ -716,6 +716,8 @@ impl EventStore for MemoryEventStore {
         interval: &NaiveDateTimeInterval,
         _query_config: &QueryConfig,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
+        let sm = self.sm.read().unwrap();
+        let sm_ref = &*sm;
         let index_by_event_type_entity_ts = self.index_by_event_type_entity_ts.read().unwrap();
 
         let mut timestamp_event_map = BTreeMap::new();
@@ -728,7 +730,7 @@ impl EventStore for MemoryEventStore {
                 {
                     keys.extend(key_set.iter().cloned());
                 }
-                let events = self.get_events_by_keys(keys);
+                let events = self.get_events_by_keys(sm_ref, keys);
                 for event in events {
                     timestamp_event_map
                         .entry(event.event_time)
