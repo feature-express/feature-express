@@ -316,6 +316,7 @@ pub fn eval_simple_expr(
             }
         }
         Expr::AttrUntyped(ref attribute) => {
+            println!("Here {:?}", attribute);
             let eval_context = context.with_context(|| format!("Context needed to evaluate untyped attribute {:?} when evaluating expression {:?}", attribute.clone(), expr))?;
             Ok(evaluate_attribute_key(
                 event,

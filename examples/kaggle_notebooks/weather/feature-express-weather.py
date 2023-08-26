@@ -26,20 +26,20 @@
 
 import os
 
-os.system("pip install fexpress")
 import pandas as pd
-import fexpress as fx
 
 # ## Loading Data
 # We are loading rows from the "weatherAUS.csv" dataset and viewing its columns.
 
 if os.path.exists("/kaggle/input/weather-dataset-rattle-package/weatherAUS.csv"):
+    os.system("pip install fexpress")
     df = pd.read_csv(
         "/kaggle/input/weather-dataset-rattle-package/weathert sAUS.csv", nrows=10000
     )
 else:
     df = pd.read_csv("datasets/weatherAUS.csv", nrows=100000)
 df.head()
+import fexpress as fx
 
 # ## Creating Events
 # We're iterating through the dataframe and creating a new event for each row, encapsulating various weather attributes. These events are added to the FeatureExpress context.
