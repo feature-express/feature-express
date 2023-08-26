@@ -18,6 +18,7 @@ use crate::event_store::{EventStore, EventStoreImpl, QueryConfig};
 use crate::interval::NaiveDateTimeInterval;
 use crate::types::{Entities, EventID, Timestamp};
 use crate::value::{Value, ValueType};
+use std::iter::FromIterator;
 
 //https://users.rust-lang.org/t/data-structure-with-views-indexes-into-itself/9803
 
@@ -98,13 +99,14 @@ fn merge_event_vectors(
         (Some(v), None) => Some(v),
         (None, None) => None,
         (Some(a), Some(b)) => {
-            let mut hm: BTreeMap<Timestamp, Vec<Arc<Event>>> = BTreeMap::new();
-            for (k, vs) in a {
-                let entry = hm.entry(k).or_default();
-                for v in vs {
-                    entry.push(v.clone());
-                }
+            // If one of the vectors is empty, use the other one.
+            if a.is_empty() {
+                return Some(b);
             }
+            if b.is_empty() {
+                return Some(a);
+            }
+            let mut hm: BTreeMap<Timestamp, Vec<Arc<Event>>> = BTreeMap::from_iter(a.into_iter());
 
             for (k, vs) in b {
                 let entry = hm.entry(k).or_default();
@@ -143,15 +145,22 @@ impl MemoryEventStore {
         }
     }
 
-    pub fn convert_vec_key_to_events(&self, key_vec: Vec<DefaultKey>) -> Result<Vec<Arc<Event>>> {
+    pub fn convert_vec_key_to_events(
+        &self,
+        sm_ref: &SlotMap<DefaultKey, Arc<Event>>,
+        key_vec: Vec<DefaultKey>,
+    ) -> Result<Vec<Arc<Event>>> {
         key_vec
             .iter()
-            .map(|key| self.convert_key_to_event(key))
+            .map(|key| Self::convert_key_to_event_with_sm(sm_ref, key))
             .collect()
     }
 
-    pub fn convert_key_to_event(&self, key: &DefaultKey) -> Result<Arc<Event>> {
-        let sm = self.sm.read().unwrap();
+    #[inline]
+    fn convert_key_to_event_with_sm(
+        sm: &SlotMap<DefaultKey, Arc<Event>>,
+        key: &DefaultKey,
+    ) -> Result<Arc<Event>> {
         sm.get(*key).ok_or(anyhow!("Cannot find Event")).cloned()
     }
 
@@ -285,6 +294,7 @@ impl MemoryEventStore {
 
     fn extract_events_from_treemap(
         &self,
+        sm_ref: &SlotMap<DefaultKey, Arc<Event>>,
         interval: Option<&NaiveDateTimeInterval>,
         treemap: &TimeBTree,
         query_config: &QueryConfig,
@@ -306,7 +316,7 @@ impl MemoryEventStore {
         entries
             .iter()
             .map(|(&ts, keys)| {
-                let events = self.convert_vec_key_to_events(keys.to_vec());
+                let events = self.convert_vec_key_to_events(sm_ref, keys.to_vec());
                 match events {
                     Ok(events) => Ok((ts, events)),
                     Err(e) => Err(e),
@@ -446,6 +456,8 @@ impl EventStore for MemoryEventStore {
         // extract without experiment
         let index_by_entity_event_type_ts = self.index_by_event_type_entity_ts.read().unwrap();
 
+        let sm = self.sm.read().unwrap(); // Lock once here
+        let sm_ref = &*sm;
         // here we are querying the entity index one entity by one entity
         let events_without_experiment = entities
             .iter()
@@ -459,8 +471,13 @@ impl EventStore for MemoryEventStore {
                         })
                     })
                     .map(|treemap| {
-                        self.extract_events_from_treemap(Some(interval), treemap, query_config)
-                            .ok()
+                        self.extract_events_from_treemap(
+                            sm_ref,
+                            Some(interval),
+                            treemap,
+                            query_config,
+                        )
+                        .ok()
                     })
                     .flatten()
             })
@@ -473,7 +490,7 @@ impl EventStore for MemoryEventStore {
         let global_events = global_index_event_type_ts
             .get(event_type)
             .map(|treemap| {
-                self.extract_events_from_treemap(Some(interval), treemap, query_config)
+                self.extract_events_from_treemap(sm_ref, Some(interval), treemap, query_config)
                     .ok()
             })
             .flatten();
@@ -496,6 +513,7 @@ impl EventStore for MemoryEventStore {
                             })
                             .map(|treemap| {
                                 self.extract_events_from_treemap(
+                                    sm_ref,
                                     Some(interval),
                                     treemap,
                                     query_config,
@@ -511,6 +529,7 @@ impl EventStore for MemoryEventStore {
         } else {
             None
         };
+
         merge_event_vectors(
             global_events,
             merge_event_vectors(events_without_experiment, events_with_experiment),
@@ -524,6 +543,8 @@ impl EventStore for MemoryEventStore {
         query_config: &QueryConfig,
         experiment_id: &Option<SmallString>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
+        let sm = self.sm.read().unwrap(); // Lock once here
+        let sm_ref = &*sm;
         // events without experiment
         let index_by_entity_ts = self.index_by_entity_ts.read().unwrap();
         let events_without_experiment = entities
@@ -535,8 +556,13 @@ impl EventStore for MemoryEventStore {
                         id: entity_id.0.clone(),
                     })
                     .map(|treemap| {
-                        self.extract_events_from_treemap(Some(interval), treemap, query_config)
-                            .ok()
+                        self.extract_events_from_treemap(
+                            sm_ref,
+                            Some(interval),
+                            treemap,
+                            query_config,
+                        )
+                        .ok()
                     })
                     .flatten()
             })
@@ -547,7 +573,7 @@ impl EventStore for MemoryEventStore {
         // extract global events
         let global_index_ts = self.global_index_ts.read().unwrap();
         let global_events = self
-            .extract_events_from_treemap(Some(interval), &global_index_ts, query_config)
+            .extract_events_from_treemap(sm_ref, Some(interval), &global_index_ts, query_config)
             .ok();
 
         // events with experiment
@@ -562,8 +588,13 @@ impl EventStore for MemoryEventStore {
                             id: entity_id.0.clone(),
                         })
                         .map(|treemap| {
-                            self.extract_events_from_treemap(Some(interval), treemap, query_config)
-                                .ok()
+                            self.extract_events_from_treemap(
+                                sm_ref,
+                                Some(interval),
+                                treemap,
+                                query_config,
+                            )
+                            .ok()
                         })
                         .flatten()
                     })
@@ -586,6 +617,8 @@ impl EventStore for MemoryEventStore {
         query_config: &QueryConfig,
         experiment_id: Option<SmallString>,
     ) -> Option<Vec<(Timestamp, Vec<Arc<Event>>)>> {
+        let sm = self.sm.read().unwrap(); // Lock once here
+        let sm_ref = &*sm;
         let index_by_entity_ts = self.index_by_entity_ts.read().unwrap();
         let events_without_experiment = entities
             .iter()
@@ -596,7 +629,7 @@ impl EventStore for MemoryEventStore {
                         id: entity_id.0.clone(),
                     })
                     .map(|treemap| {
-                        self.extract_events_from_treemap(None, treemap, query_config)
+                        self.extract_events_from_treemap(sm_ref, None, treemap, query_config)
                             .ok()
                     })
                     .flatten()
@@ -606,7 +639,7 @@ impl EventStore for MemoryEventStore {
 
         let global_index_by_ts = self.global_index_ts.read().unwrap();
         let events_global = self
-            .extract_events_from_treemap(None, &global_index_by_ts, query_config)
+            .extract_events_from_treemap(sm_ref, None, &global_index_by_ts, query_config)
             .ok();
 
         let events_with_experiment = if let Some(ref experiment_id) = experiment_id {
@@ -620,7 +653,7 @@ impl EventStore for MemoryEventStore {
                             id: entity_id.0.clone(),
                         })
                         .map(|treemap| {
-                            self.extract_events_from_treemap(None, treemap, query_config)
+                            self.extract_events_from_treemap(sm_ref, None, treemap, query_config)
                                 .ok()
                         })
                         .flatten()
@@ -632,7 +665,6 @@ impl EventStore for MemoryEventStore {
         } else {
             None
         };
-
         merge_event_vectors(
             events_global,
             merge_event_vectors(events_with_experiment, events_without_experiment),
