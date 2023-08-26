@@ -17,6 +17,7 @@ use crate::event::{EntityType, Event};
 use crate::event_store::row_event_store::memory_event_store::MemoryEventStore;
 use crate::event_store::{EventStore, EventStoreImpl};
 use crate::features::{Feature, FeatureExtractor, Features};
+use crate::features_rewrite::rewrite_untyped_attributes;
 use crate::interval::NaiveDateTimeInterval;
 use crate::obs_dates::{ObsDate, ObservationDates, ObservationDatesConfig};
 use crate::types::{Entities, Timestamp};
@@ -173,7 +174,10 @@ impl EventContext {
             .clone()
             .materialize_observation_dates(Box::new(self.event_store.clone()), query_config)?;
 
-        let features = Features::try_from(query)?;
+        let mut features = Features::try_from(query)?;
+
+        rewrite_untyped_attributes(&mut features, &mut self.event_store)
+            .context("Cannot rewrite features")?;
 
         let entities: Vec<_> = obs_dates_materialized.inner.keys().collect_vec();
 
