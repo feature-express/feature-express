@@ -43,7 +43,7 @@ df.head()
 import fexpress as fx
 
 # Pandas
-window = 180
+window = 30
 start_time = time.time()
 def calculate_features(city_df):
     features = {

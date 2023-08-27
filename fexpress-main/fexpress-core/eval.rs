@@ -297,12 +297,9 @@ pub fn eval_simple_expr(
         | Expr::AttrDate(attribute)
         | Expr::AttrDateTime(attribute) => {
             let event = event_with_context?;
-            let result = event.extract_attribute(attribute).with_context(|| {
-                format!(
-                    "Cannot extract attribute {:?}",
-                    attribute
-                )
-            });
+            let result = event
+                .extract_attribute(attribute)
+                .with_context(|| format!("Cannot extract attribute {:?}", attribute));
             match result {
                 Ok(v) => Ok(v),
                 // TODO: temporary solution must check if the attribute exists in the schema

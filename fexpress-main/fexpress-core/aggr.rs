@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::ast::core::AggrExpr;
-use crate::map::HashSet;
 use crate::sstring::SmallString;
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
@@ -262,6 +261,7 @@ fn prepare_aggregation_input(
     let mut data: BTreeMap<NaiveDateTime, Vec<AggrEvalRow>> = BTreeMap::new();
     if let Some(events_vec) = interval_events {
         for (event_time, events) in events_vec {
+            let mut eval_vec = vec![];
             for event in events {
                 let cond_eval = agg
                     .cond
@@ -316,10 +316,11 @@ fn prepare_aggregation_input(
                             groupby_eval,
                             having_eval,
                         };
-                        data.entry(event_time).or_default().push(aggr_row);
+                        eval_vec.push(aggr_row);
                     }
                 }
             }
+            data.insert(event_time, eval_vec);
         }
     }
     Ok(data)
