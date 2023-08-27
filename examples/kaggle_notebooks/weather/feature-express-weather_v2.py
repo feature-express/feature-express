@@ -35,12 +35,47 @@ import time
 if os.path.exists("/kaggle/input/weather-dataset-rattle-package/weatherAUS.csv"):
     os.system("pip install fexpress")
     df = pd.read_csv(
-        "/kaggle/input/weather-dataset-rattle-package/weathert sAUS.csv", nrows=100000
+        "/kaggle/input/weather-dataset-rattle-package/weathert sAUS.csv"
     )
 else:
-    df = pd.read_csv("datasets/weatherAUS.csv", nrows=100000)
+    df = pd.read_csv("datasets/weatherAUS.csv")
 df.head()
 import fexpress as fx
+
+# Pandas
+window = 180
+start_time = time.time()
+def calculate_features(city_df):
+    features = {
+        "avg(MaxTemp) over last 7 days": city_df['MaxTemp'].rolling(window=window).mean(),
+        "min(MinTemp) over last 7 days": city_df['MinTemp'].rolling(window=window).min(),
+        "max(WindGustSpeed) over last 3 days": city_df['WindGustSpeed'].rolling(window=window).max(),
+        "sum(Rainfall) over last 30 days": city_df['Rainfall'].rolling(window=window).sum(),
+        "avg(WindSpeed9am) over last 5 days": city_df['WindSpeed9am'].rolling(window=window).mean(),
+        "avg(WindSpeed3pm) over last 5 days": city_df['WindSpeed3pm'].rolling(window=window).mean(),
+        "rainy_days": (city_df['RainToday'] == 'Yes').rolling(window=window).sum(),
+        "non_rainy_days": (city_df['RainToday'] == 'No').rolling(window=window).sum(),
+        "avg(Cloud9am) over last 7 days": city_df['Cloud9am'].rolling(window=window).mean(),
+        "avg(Cloud3pm) over last 7 days": city_df['Cloud3pm'].rolling(window=window).mean(),
+        "sum(Pressure9am) over last 3 days": city_df['Pressure9am'].rolling(window=window).sum(),
+        "sum(Pressure3pm) over last 3 days": city_df['Pressure3pm'].rolling(window=window).sum(),
+        "max(Temp3pm) over last 7 days": city_df['Temp3pm'].rolling(window=window).max(),
+        "min(Temp9am) over last 7 days": city_df['Temp9am'].rolling(window=window).min(),
+    }
+    return pd.DataFrame(features)
+
+feature_frames = []
+for city in df['Location'].unique():
+    city_df = df[df['Location'] == city]
+    features = calculate_features(city_df)
+    features['Location'] = city
+    features['ObservationDate'] = city_df['Date']
+    feature_frames.append(features)
+
+final_features_df = pd.concat(feature_frames).reset_index(drop=True)
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Pandas elapsed time: {elapsed_time} seconds")
 
 # ## Creating Events
 # We're iterating through the dataframe and creating a new event for each row, encapsulating various weather attributes. These events are added to the FeatureExpress context.
@@ -95,7 +130,7 @@ event_scope_config = fx.sdk.event_scope_config.EventScopeConfigClass(
     related_entities_events=["city"]
 )
 query_config = fx.sdk.query_config.QueryConfig(
-    include_events_on_obs_date=False, parallel=False
+    include_events_on_obs_date=False, parallel=True
 )
 
 # ## Schema Information
@@ -110,36 +145,30 @@ print(event_context.event_context.schema())
 start_time = time.time()
 features = event_context.query(
     obs_dates_config=obs_dates_config,
-    event_scope_config=fx.sdk.event_scope_config.EventScopeConfigClass(
-        related_entities_events=["city"]
-    ),
+    event_scope_config=fx.sdk.event_scope_config.EventScopeConfigClass(related_entities_events=["city"]),
     query_config=query_config,
     query=[
-        "obs_dt as obs_dt",
-        "@entities.city as city",
-        "avg(MaxTemp) over last 7 days",
-        "min(MinTemp) over last 7 days",
-        "max(WindGustSpeed) over last 3 days",
-        #"last(Humidity3pm) over past",
-        #"first(Humidity9am) over future",
-        #"sum(Rainfall) over last 30 days",
-        "avg(WindSpeed9am) over last 5 days",
-        "avg(WindSpeed3pm) over last 5 days",
-        "last(Temp3pm) over last 3 days",
-        "first(Temp9am) over last 3 days",
-        #"count(*) over last 30 days where RainToday = 'Yes' as rainy_days",
-        #"count(*) over last 30 days where RainToday = 'No' as non_rainy_days",
-        "avg(Cloud9am) over last 7 days",
-        "avg(Cloud3pm) over last 7 days",
-        "sum(Pressure9am) over last 3 days",
-        "sum(Pressure3pm) over last 3 days",
-        #"last(WindGustDir) over past",
-        "max(Temp3pm) over last 7 days",
-        "min(Temp9am) over last 7 days",
-    ],
+        f"obs_dt as obs_dt",
+        f"@entities.city as city",
+        f"avg(MaxTemp) over last {window} days",
+        f"min(MinTemp) over last {window} days",
+        f"max(WindGustSpeed) over last {window} days",
+        f"sum(Rainfall) over last {window} days",
+        f"avg(WindSpeed9am) over last {window} days",
+        f"avg(WindSpeed3pm) over last {window} days",
+        f"last(Temp3pm) over last {window} days",
+        f"count(*) over last {window} days where RainToday = 'Yes' as rainy_days",
+        f"count(*) over last {window} days where RainToday = 'No' as non_rainy_days",
+        f"avg(Cloud9am) over last {window} days",
+        f"avg(Cloud3pm) over last {window} days",
+        f"sum(Pressure9am) over last {window} days",
+        f"sum(Pressure3pm) over last {window} days",
+        f"max(Temp3pm) over last {window} days",
+        f"min(Temp9am) over last {window} days"
+    ]
 )
 end_time = time.time()
 elapsed_time = end_time - start_time
-print(f"Elapsed time: {elapsed_time} seconds")
+print(f"Fexpress elapsed time: {elapsed_time} seconds")
 print(features.head())
 print(features.shape)
