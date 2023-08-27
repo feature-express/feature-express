@@ -4,7 +4,7 @@ from setuptools_rust import RustExtension
 
 setup(
     name="fexpress",
-    version="0.0.5",
+    version="0.0.6",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Rust",
