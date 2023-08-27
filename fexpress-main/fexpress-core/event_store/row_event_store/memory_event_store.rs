@@ -99,27 +99,23 @@ fn merge_event_vectors(
         (Some(v), None) => Some(v),
         (None, None) => None,
         (Some(a), Some(b)) => {
-            // If one of the vectors is empty, use the other one.
             if a.is_empty() {
                 return Some(b);
             }
             if b.is_empty() {
                 return Some(a);
             }
+
             let mut hm: BTreeMap<Timestamp, Vec<Arc<Event>>> = BTreeMap::from_iter(a.into_iter());
 
             for (k, vs) in b {
-                let entry = hm.entry(k).or_default();
-                for v in vs {
-                    entry.push(v.clone());
-                }
+                hm.entry(k).or_default().extend(vs);
             }
 
-            let mut out = Vec::new();
-            for (k, vs) in hm.iter() {
-                let mut vs = vs.clone();
+            let mut out = Vec::with_capacity(hm.len());
+            for (k, mut vs) in hm {
                 vs.sort_by_key(|event| event.event_time);
-                out.push((*k, vs))
+                out.push((k, vs));
             }
 
             Some(out)
@@ -148,7 +144,7 @@ impl MemoryEventStore {
     pub fn convert_vec_key_to_events(
         &self,
         sm_ref: &SlotMap<DefaultKey, Arc<Event>>,
-        key_vec: Vec<DefaultKey>,
+        key_vec: &[DefaultKey],
     ) -> Result<Vec<Arc<Event>>> {
         key_vec
             .iter()
@@ -299,28 +295,24 @@ impl MemoryEventStore {
         treemap: &TimeBTree,
         query_config: &QueryConfig,
     ) -> Result<Vec<(Timestamp, Vec<Arc<Event>>)>> {
-        let range = interval.map(|interval| {
+        let entries = if let Some(interval) = interval {
             let (start_dt, end_dt) = if query_config.include_events_on_obs_date {
                 (interval.start_dt_exclusive_safe(), interval.end_dt_safe())
             } else {
                 (interval.start_dt_safe(), interval.end_dt_exclusive_safe())
             };
-            start_dt..=end_dt
-        });
-
-        let entries = match range {
-            Some(range) => treemap.range(range).collect_vec(),
-            None => treemap.iter().collect_vec(),
+            treemap.range(start_dt..=end_dt).collect_vec()
+        } else {
+            treemap.iter().collect_vec()
         };
 
         entries
             .iter()
             .map(|(&ts, keys)| {
-                let events = self.convert_vec_key_to_events(sm_ref, keys.to_vec());
-                match events {
-                    Ok(events) => Ok((ts, events)),
-                    Err(e) => Err(e),
-                }
+                // Assuming that `convert_vec_key_to_events` can accept a slice.
+                // Change this back to keys.to_vec() if the original function can't work with a slice.
+                let events = self.convert_vec_key_to_events(sm_ref, &keys);
+                events.map(|events| (ts, events))
             })
             .collect()
     }
@@ -336,7 +328,11 @@ impl MemoryEventStore {
         Ok(events)
     }
 
-    fn get_events_by_keys(&self, sm_ref: &SlotMap<DefaultKey, Arc<Event>>, keys: Vec<DefaultKey>) -> Vec<Arc<Event>> {
+    fn get_events_by_keys(
+        &self,
+        sm_ref: &SlotMap<DefaultKey, Arc<Event>>,
+        keys: Vec<DefaultKey>,
+    ) -> Vec<Arc<Event>> {
         keys.iter()
             .filter_map(|&key| sm_ref.get(key).cloned())
             .collect()

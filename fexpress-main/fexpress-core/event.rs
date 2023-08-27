@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -51,9 +52,7 @@ impl FromStr for AttributeKey {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts = s.split('.').map(|x| x.to_string()).collect_vec();
         if parts.len() == 1 {
-            Ok(AttributeKey::Single(
-                parts[0].to_string(),
-            ))
+            Ok(AttributeKey::Single(parts[0].to_string()))
         } else if parts.len() > 1 {
             let mut parts_iter = parts.into_iter();
             let first = parts_iter
@@ -72,6 +71,18 @@ impl FromStr for AttributeKey {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct AttributeName(pub SmallString);
+
+impl Borrow<str> for AttributeName {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Borrow<String> for AttributeName {
+    fn borrow(&self) -> &String {
+        &self.0
+    }
+}
 
 impl AttributeName {
     pub fn new<S: AsRef<str>>(name: S) -> Self {
@@ -154,7 +165,7 @@ impl Event {
     pub fn extract_attribute(&self, attribute: &AttributeKey) -> Option<Value> {
         let attrs = self.attrs.as_ref()?;
         match attribute {
-            AttributeKey::Single(k) => attrs.get(&(a!(k))).cloned(),
+            AttributeKey::Single(k) => attrs.get(k).cloned(),
             AttributeKey::Nested(keys) => {
                 let attribute_name = a!(&keys[0]);
                 let mut current_value = attrs.get(&attribute_name).cloned();

@@ -534,7 +534,7 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "fexpress"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "fexpress-main",
  "pyo3",
@@ -544,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "fexpress-derive"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "chrono",
  "quote",
@@ -553,7 +553,7 @@ dependencies = [
 
 [[package]]
 name = "fexpress-main"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "bincode",

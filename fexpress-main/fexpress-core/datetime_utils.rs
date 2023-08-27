@@ -84,6 +84,17 @@ where
     Err(serde::de::Error::custom("Failed to parse date time"))
 }
 
+pub fn middle_datetime(datetime1: NaiveDateTime, datetime2: NaiveDateTime) -> NaiveDateTime {
+    let timestamp1 = datetime1.timestamp();
+    let timestamp2 = datetime2.timestamp();
+
+    // Calculate the middle timestamp
+    let middle_timestamp = (timestamp1 + timestamp2) / 2;
+
+    // Convert the middle timestamp back to NaiveDateTime
+    NaiveDateTime::from_timestamp(middle_timestamp, 0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

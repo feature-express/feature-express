@@ -3,10 +3,13 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::ast::core::AggrExpr;
+use crate::map::HashSet;
 use crate::sstring::SmallString;
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use std::iter::FromIterator;
+
+use itertools::Itertools;
 
 use crate::eval::{eval_simple_expr, extract_interval_events, EvalContext};
 use crate::event::Event;
@@ -29,6 +32,115 @@ struct AggrEvalRow {
 /// First it maps the events so that the components of the aggregation:
 /// - inside expression
 /// -
+#[allow(clippy::suspicious_operation_groupings)]
+pub fn eval_agg_using_partial_agg_backup(
+    agg: &AggrExpr,
+    context: &EvalContext,
+    stored_variables: &HashMap<SmallString, HashMap<Timestamp, Value>>,
+) -> Result<HashMap<NaiveDateTime, Value>> {
+    let obs_dates: Vec<_> = context.get_sorted_obs_dates()?;
+
+    let intervals: Vec<_> = obs_dates
+        .iter()
+        .filter_map(|obs_date| Some(agg.when.materialize_interval(obs_date)))
+        .flatten()
+        .collect();
+
+    let first_interval_start = intervals
+        .first()
+        .expect("obs_dates must be non empty")
+        .start_dt;
+
+    let last_interval_end = intervals
+        .last()
+        .expect("obs_dates must be non empty")
+        .end_dt;
+
+    let all_obs_date_interval = NaiveDateTimeInterval {
+        start_dt: first_interval_start,
+        end_dt: last_interval_end,
+    };
+
+    // 0.22s - delta 0.13s
+    let interval_events = extract_interval_events(agg, context, &all_obs_date_interval);
+    // 1.20s - delta 1.07
+    let aggr_table = prepare_aggregation_input(agg, context, interval_events, stored_variables)?;
+    let aggr_table_preaggr = BTreeMap::from_iter(aggr_table.iter().map(|(ts, vs)| {
+        let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
+        for v in vs {
+            partial_agg_state.update(v.aggr_eval.clone(), *ts)
+        }
+        (*ts, partial_agg_state)
+    }));
+    // return Ok(result);
+    let mut result = HashMap::new();
+
+    let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
+    let mut last_interval = intervals
+        .first()
+        .context("Failed to find interval")?
+        .clone();
+
+    for (i, (obs_date, interval)) in obs_dates.iter().zip(intervals.iter()).enumerate() {
+        let interval_start_dt_safe = interval.start_dt_safe();
+        let interval_end_dt_safe = interval.end_dt_safe();
+        let last_interval_start_dt_safe = last_interval.start_dt_safe();
+        let last_interval_end_dt_safe = last_interval.end_dt_safe();
+
+        // first initialize the aggregation table
+        if i == 0 {
+            // TODO: these condition < interval.end_dt_safe() I wonder how it works with config that the observationd_Dates/events are included in the
+            // in the calculations
+            for (ts, vs) in aggr_table_preaggr.range(interval_start_dt_safe..interval_end_dt_safe) {
+                partial_agg_state.merge_inplace(vs);
+            }
+        } else {
+            // look for interval to subtract and add
+            // b0-----------e0
+            //       b1------------e1
+            // subtract <b0, b1)
+            // add      (e0, e1>
+
+            // I think there is a decision to make here if the overlapping region is large then it
+            // makes sense to subtract the non overlapping start but if the region is small
+            // then it makes sense to construct the new partial aggregate from scratch
+
+            let subtract = (interval.start_dt > last_interval.start_dt)
+                & (last_interval.end_dt > interval.start_dt);
+
+            if subtract {
+                for (ts, vs) in
+                    aggr_table_preaggr.range(last_interval_start_dt_safe..interval_start_dt_safe)
+                {
+                    partial_agg_state.subtract_inplace(&vs);
+                }
+            }
+
+            match interval.start_dt.cmp(&last_interval.end_dt) {
+                Ordering::Greater | Ordering::Equal => {
+                    partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
+                    for (ts, vs) in
+                        aggr_table_preaggr.range(interval_start_dt_safe..interval_end_dt_safe)
+                    {
+                        partial_agg_state.merge_inplace(vs);
+                    }
+                }
+                Ordering::Less => {
+                    for (ts, vs) in
+                        aggr_table_preaggr.range(last_interval_end_dt_safe..interval_end_dt_safe)
+                    {
+                        partial_agg_state.merge_inplace(vs);
+                    }
+                }
+            }
+        }
+        result.insert(*obs_date, partial_agg_state.evaluate());
+        last_interval = interval.clone();
+    }
+
+    Ok(result)
+}
+
 #[allow(clippy::suspicious_operation_groupings)]
 pub fn eval_agg_using_partial_agg(
     agg: &AggrExpr,
@@ -58,78 +170,82 @@ pub fn eval_agg_using_partial_agg(
         end_dt: last_interval_end,
     };
 
+    // prompt
+    /// I have an algorithmic problem to solve
+    // 0.22s - delta 0.13s
     let interval_events = extract_interval_events(agg, context, &all_obs_date_interval);
+    // 1.20s - delta 1.07
     let aggr_table = prepare_aggregation_input(agg, context, interval_events, stored_variables)?;
-    let aggr_table_preaggr = BTreeMap::from_iter(aggr_table.iter().map(|(ts, vs)| {
-        let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
-        for v in vs {
-            partial_agg_state.update(v.aggr_eval.clone(), *ts)
-        }
-        (*ts, partial_agg_state)
-    }));
+    let aggr_table_preaggr = prepare_preaggregated_states(agg, aggr_table);
+
     let mut result = HashMap::new();
-
     let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
-    let mut last_interval = intervals
-        .first()
-        .context("Failed to find interval")?
-        .clone();
 
-    for (i, (obs_date, interval)) in obs_dates.iter().zip(intervals.iter()).enumerate() {
-        // first initialize the aggregation table
-        if i == 0 {
-            // TODO: these condition < interval.end_dt_safe() I wonder how it works with config that the observationd_Dates/events are included in the
-            // in the calculations
-            for (ts, vs) in
-                aggr_table_preaggr.range(interval.start_dt_safe()..interval.end_dt_safe())
-            {
-                partial_agg_state.merge_inplace(vs);
-            }
-        } else {
-            // look for interval to subtract and add
-            // b0-----------e0
-            //       b1------------e1
-            // subtract <b0, b1)
-            // add      (e0, e1>
+    let mut last_interval = NaiveDateTimeInterval {
+        start_dt: Some(NaiveDateTime::from_timestamp(0, 0)),
+        end_dt: Some(NaiveDateTime::from_timestamp(0, 0)),
+    };
 
-            // I think there is a decision to make here if the overlapping region is large then it
-            // makes sense to subtract the non overlapping start but if the region is small
-            // then it makes sense to construct the new partial aggregate from scratch
+    let mut forward_ptr = 0;
+    let mut backward_ptr = 0;
 
-            let subtract = (interval.start_dt > last_interval.start_dt)
-                & (last_interval.end_dt > interval.start_dt);
+    for (obs_date, interval) in obs_dates.iter().zip(intervals.iter()) {
+        let interval_start_dt_safe = interval.start_dt_safe();
+        let interval_end_dt_safe = interval.end_dt_safe();
+        let last_interval_start_dt_safe = last_interval.start_dt_safe();
+        let last_interval_end_dt_safe = last_interval.end_dt_safe();
 
-            if subtract {
-                for (ts, vs) in aggr_table_preaggr
-                    .range(last_interval.start_dt_safe()..interval.start_dt_safe())
-                {
-                    partial_agg_state.subtract_inplace(&vs);
-                }
-            }
-
-            match interval.start_dt.cmp(&last_interval.end_dt) {
-                Ordering::Greater | Ordering::Equal => {
-                    partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
-                    for (ts, vs) in
-                        aggr_table_preaggr.range(interval.start_dt_safe()..interval.end_dt_safe())
-                    {
-                        partial_agg_state.merge_inplace(vs);
-                    }
-                }
-                Ordering::Less => {
-                    for (ts, vs) in aggr_table_preaggr
-                        .range(last_interval.end_dt_safe()..interval.end_dt_safe())
-                    {
-                        partial_agg_state.merge_inplace(vs);
-                    }
-                }
-            }
+        // Resetting state if intervals don't overlap or are disjoint
+        if interval_end_dt_safe < last_interval_start_dt_safe
+            || interval_start_dt_safe > last_interval_end_dt_safe
+        {
+            partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
+            forward_ptr = aggr_table_preaggr
+                .binary_search_by_key(&interval_start_dt_safe, |&(dt, _)| dt)
+                .unwrap_or_else(|x| x);
+            backward_ptr = forward_ptr;
         }
+
+        // Move forward_ptr up to include new dates
+        while forward_ptr < aggr_table_preaggr.len()
+            && aggr_table_preaggr[forward_ptr].0 <= interval_end_dt_safe
+        {
+            partial_agg_state.merge_inplace(&aggr_table_preaggr[forward_ptr].1);
+            forward_ptr += 1;
+        }
+
+        // Move backward_ptr up to exclude old dates
+        while backward_ptr < forward_ptr
+            && aggr_table_preaggr[backward_ptr].0 < interval_start_dt_safe
+        {
+            partial_agg_state.subtract_inplace(&aggr_table_preaggr[backward_ptr].1);
+            backward_ptr += 1;
+        }
+
+        // Save the result
         result.insert(*obs_date, partial_agg_state.evaluate());
+
+        // Update the last interval
         last_interval = interval.clone();
     }
 
     Ok(result)
+}
+
+fn prepare_preaggregated_states(
+    agg: &AggrExpr,
+    aggr_table: BTreeMap<NaiveDateTime, Vec<AggrEvalRow>>,
+) -> Vec<(NaiveDateTime, PartialAggregateWrapper)> {
+    aggr_table
+        .iter()
+        .map(|(ts, vs)| {
+            let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
+            for v in vs {
+                partial_agg_state.update(v.aggr_eval.clone(), *ts)
+            }
+            (*ts, partial_agg_state)
+        })
+        .collect_vec()
 }
 
 /// Creates a table with precalulcalated aggregation expressions:
@@ -150,7 +266,6 @@ fn prepare_aggregation_input(
                 let cond_eval = agg
                     .cond
                     .as_ref()
-                    .cloned()
                     .map(|cond_expr| {
                         eval_simple_expr(&cond_expr, Some(&event), Some(context), stored_variables)
                             .context("Cannot evaluate groupby expression")
@@ -169,7 +284,6 @@ fn prepare_aggregation_input(
                     let groupby_eval = agg
                         .groupby
                         .as_ref()
-                        .cloned()
                         .map(|groupby_expr| {
                             eval_simple_expr(
                                 &groupby_expr,
@@ -184,7 +298,6 @@ fn prepare_aggregation_input(
                     let having_eval = agg
                         .having
                         .as_ref()
-                        .cloned()
                         .map(|having_expr| {
                             eval_simple_expr(
                                 &(having_expr.expr),

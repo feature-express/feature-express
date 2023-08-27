@@ -2,7 +2,7 @@
 members = ["fexpress-main", "fexpress-py"]
 
 [profile.release]
-lto = "fat"
+#lto = "fat"
 #codegen-units = 1
-panic = "abort"
+#panic = "abort"
 opt-level = 3

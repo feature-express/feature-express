@@ -127,10 +127,11 @@ fn eval_expr_many_obsdates(
         .inner
     {
         let event = if let Some(event_id) = &obs_date.event_id {
-            context.event_index
-                   .ok_or(anyhow!("index needed"))?
-                   .event_store
-                   .get_event_by_id(event_id)
+            context
+                .event_index
+                .ok_or(anyhow!("index needed"))?
+                .event_store
+                .get_event_by_id(event_id)
         } else {
             None
         };
@@ -544,8 +545,7 @@ fn evaluate_context_attribute(
     let eval_context = context.with_context(|| {
         format!(
             "Context needed to evaluate context attributes {:?} when evaluating expression {:?}",
-            attribute,
-            expr
+            attribute, expr
         )
     })?;
     // here there are 2 options either the @attribute refers to the currently evaluated event or the current obs date event
