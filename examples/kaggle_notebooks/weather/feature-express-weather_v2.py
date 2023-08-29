@@ -130,7 +130,7 @@ event_scope_config = fx.sdk.event_scope_config.EventScopeConfigClass(
     related_entities_events=["city"]
 )
 query_config = fx.sdk.query_config.QueryConfig(
-    include_events_on_obs_date=False, parallel=True
+    include_events_on_obs_date=False, parallel=False
 )
 
 # ## Schema Information

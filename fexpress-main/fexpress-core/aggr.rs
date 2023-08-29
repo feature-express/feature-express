@@ -169,13 +169,19 @@ pub fn eval_agg_using_partial_agg(
         end_dt: last_interval_end,
     };
 
-    // prompt
-    /// I have an algorithmic problem to solve
-    // 0.22s - delta 0.13s
+    // until now 0.83s
+
     let interval_events = extract_interval_events(agg, context, &all_obs_date_interval);
-    // 1.20s - delta 1.07
+
+    // until now 0.96
+
     let aggr_table = prepare_aggregation_input(agg, context, interval_events, stored_variables)?;
+
+    // until now 1.68
+
     let aggr_table_preaggr = prepare_preaggregated_states(agg, aggr_table);
+
+    // until now 1.77
 
     let mut result = HashMap::new();
     let mut partial_agg_state = PartialAggregateWrapper::new(agg.agg_func.clone());
@@ -272,7 +278,7 @@ fn prepare_aggregation_input(
                     })
                     .transpose()?;
 
-                if (cond_eval == Some(Value::Bool(true))) | agg.cond.is_none() {
+                if agg.cond.is_none() | (cond_eval == Some(Value::Bool(true))) {
                     let aggr_eval = eval_simple_expr(
                         &agg.agg_expr,
                         Some(&event),
